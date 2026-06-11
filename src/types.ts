@@ -1,4 +1,10 @@
 import type { USER_ROLES } from "./constants";
+import type {
+  CrewAssignmentRecord,
+  ProjectPhaseRecord,
+  ProjectRecord,
+  SiteUserRecord,
+} from "./lib/schema";
 
 export type SitePulseUserRole =
   (typeof USER_ROLES)[keyof typeof USER_ROLES];
@@ -17,3 +23,5 @@ export type SignUpPayload = {
   password: string;
   role: SitePulseUserRole;
 };
+
+export type { CrewAssignmentRecord, ProjectPhaseRecord, ProjectRecord, SiteUserRecord };

@@ -103,8 +103,8 @@ export default function DashboardPage() {
           },
           {
             label: "Current phase",
-            value: "Phase 1",
-            note: "Projects, phases, and assignment resources land next.",
+            value: "Phase 2",
+            note: "Projects, project phases, scoped assignments, and staff directory are now wired.",
           },
         ].map((item) => (
           <Card key={item.label}>
