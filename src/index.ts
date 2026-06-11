@@ -19,6 +19,10 @@ import {
   attachRequestId,
   blockStaffSelfSignup,
 } from "./middleware/request-context.js";
+import { crewAssignmentsRouter } from "./routes/crew-assignments.js";
+import { projectPhasesRouter } from "./routes/project-phases.js";
+import { projectsRouter } from "./routes/projects.js";
+import { usersRouter } from "./routes/users.js";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -82,6 +86,11 @@ app.get("/api/me", (req, res) => {
     }),
   );
 });
+
+app.use("/api/projects", projectsRouter);
+app.use("/api/project-phases", projectPhasesRouter);
+app.use("/api/crew-assignments", crewAssignmentsRouter);
+app.use("/api/users", usersRouter);
 
 app.use((_req, res) => {
   res.status(404).json({

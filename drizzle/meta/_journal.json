@@ -8,6 +8,13 @@
       "when": 1780937022719,
       "tag": "0000_loose_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781193231215,
+      "tag": "0001_spotty_leo",
+      "breakpoints": true
     }
   ]
 }
