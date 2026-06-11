@@ -2,6 +2,7 @@
 
 import React from "react";
 import {
+  useGetIdentity,
   useMenu,
   useLink,
   useRefineOptions,
@@ -29,10 +30,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ListIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SessionUser, SitePulseUserRole } from "@/types";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
+  const { data: identity } = useGetIdentity<SessionUser>();
+  const visibleMenuItems = menuItems.filter((item) =>
+    canAccessMenuItem(item, identity?.role),
+  );
 
   return (
     <ShadcnSidebar collapsible="icon" className={cn("border-none")}>
@@ -55,7 +61,7 @@ export function Sidebar() {
           }
         )}
       >
-        {menuItems.map((item: TreeMenuItem) => (
+        {visibleMenuItems.map((item: TreeMenuItem) => (
           <SidebarItem
             key={item.key || item.name}
             item={item}
@@ -66,6 +72,16 @@ export function Sidebar() {
     </ShadcnSidebar>
   );
 }
+
+const canAccessMenuItem = (item: TreeMenuItem, role?: SitePulseUserRole) => {
+  const allowedRoles = item.meta?.roles as SitePulseUserRole[] | undefined;
+
+  if (!allowedRoles || allowedRoles.length === 0) {
+    return true;
+  }
+
+  return role ? allowedRoles.includes(role) : false;
+};
 
 type MenuItemProps = {
   item: TreeMenuItem;
