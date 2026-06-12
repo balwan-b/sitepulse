@@ -23,6 +23,7 @@ import { crewAssignmentsRouter } from "./routes/crew-assignments.js";
 import { dailyLogsRouter } from "./routes/daily-logs.js";
 import { projectPhasesRouter } from "./routes/project-phases.js";
 import { projectsRouter } from "./routes/projects.js";
+import { punchItemsRouter } from "./routes/punch-items.js";
 import { usersRouter } from "./routes/users.js";
 
 const envSchema = z.object({
@@ -92,6 +93,7 @@ app.use("/api/projects", projectsRouter);
 app.use("/api/project-phases", projectPhasesRouter);
 app.use("/api/crew-assignments", crewAssignmentsRouter);
 app.use("/api/daily-logs", dailyLogsRouter);
+app.use("/api/punch-items", punchItemsRouter);
 app.use("/api/users", usersRouter);
 
 app.use((_req, res) => {

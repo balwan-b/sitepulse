@@ -13,6 +13,8 @@ import {
   CREW_ASSIGNMENT_ROLES,
   DAILY_LOG_STATUSES,
   PHASE_STATUSES,
+  PUNCH_ITEM_SEVERITIES,
+  PUNCH_ITEM_STATUSES,
   PROJECT_EVENT_TYPES,
   PROJECT_STATUSES,
 } from "../../lib/status-rules.js";
@@ -33,6 +35,14 @@ export const crewAssignmentRoleEnum = pgEnum(
   CREW_ASSIGNMENT_ROLES,
 );
 export const dailyLogStatusEnum = pgEnum("daily_log_status", DAILY_LOG_STATUSES);
+export const punchItemStatusEnum = pgEnum(
+  "punch_item_status",
+  PUNCH_ITEM_STATUSES,
+);
+export const punchItemSeverityEnum = pgEnum(
+  "punch_item_severity",
+  PUNCH_ITEM_SEVERITIES,
+);
 export const projectEventTypeEnum = pgEnum(
   "project_event_type",
   PROJECT_EVENT_TYPES,
@@ -179,6 +189,42 @@ export const projectEvents = pgTable(
   ],
 );
 
+export const punchItems = pgTable(
+  "punch_items",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    phaseId: text("phase_id").references(() => projectPhases.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    severity: punchItemSeverityEnum("severity").default("medium").notNull(),
+    location: text("location").notNull(),
+    assigneeId: text("assignee_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    dueDate: timestamp("due_date").notNull(),
+    status: punchItemStatusEnum("status").default("open").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("punch_items_project_id_idx").on(table.projectId),
+    index("punch_items_phase_id_idx").on(table.phaseId),
+    index("punch_items_assignee_id_idx").on(table.assigneeId),
+    index("punch_items_status_idx").on(table.status),
+    index("punch_items_severity_idx").on(table.severity),
+    index("punch_items_due_date_idx").on(table.dueDate),
+    index("punch_items_project_status_idx").on(table.projectId, table.status),
+    index("punch_items_created_at_idx").on(table.createdAt),
+  ],
+);
+
 export const projectRelations = relations(projects, ({ one, many }) => ({
   projectManager: one(user, {
     fields: [projects.projectManagerId],
@@ -186,6 +232,8 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   }),
   phases: many(projectPhases),
   crewAssignments: many(crewAssignments),
+  dailyLogs: many(dailyLogs),
+  punchItems: many(punchItems),
 }));
 
 export const projectPhaseRelations = relations(projectPhases, ({ one, many }) => ({
@@ -194,6 +242,8 @@ export const projectPhaseRelations = relations(projectPhases, ({ one, many }) =>
     references: [projects.id],
   }),
   crewAssignments: many(crewAssignments),
+  dailyLogs: many(dailyLogs),
+  punchItems: many(punchItems),
 }));
 
 export const crewAssignmentRelations = relations(crewAssignments, ({ one }) => ({
@@ -237,8 +287,28 @@ export const projectEventRelations = relations(projectEvents, ({ one }) => ({
   }),
 }));
 
+export const punchItemRelations = relations(punchItems, ({ one }) => ({
+  project: one(projects, {
+    fields: [punchItems.projectId],
+    references: [projects.id],
+  }),
+  phase: one(projectPhases, {
+    fields: [punchItems.phaseId],
+    references: [projectPhases.id],
+  }),
+  assignee: one(user, {
+    fields: [punchItems.assigneeId],
+    references: [user.id],
+  }),
+  creator: one(user, {
+    fields: [punchItems.createdBy],
+    references: [user.id],
+  }),
+}));
+
 export type Project = typeof projects.$inferSelect;
 export type ProjectPhase = typeof projectPhases.$inferSelect;
 export type CrewAssignment = typeof crewAssignments.$inferSelect;
 export type DailyLog = typeof dailyLogs.$inferSelect;
 export type ProjectEvent = typeof projectEvents.$inferSelect;
+export type PunchItem = typeof punchItems.$inferSelect;

@@ -25,6 +25,20 @@ export const DAILY_LOG_STATUSES = [
   "locked",
 ] as const;
 
+export const PUNCH_ITEM_STATUSES = [
+  "open",
+  "in_progress",
+  "ready_for_review",
+  "closed",
+] as const;
+
+export const PUNCH_ITEM_SEVERITIES = [
+  "low",
+  "medium",
+  "high",
+  "critical",
+] as const;
+
 export const PROJECT_EVENT_TYPES = [
   "project_created",
   "project_status_changed",
@@ -45,4 +59,29 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type PhaseStatus = (typeof PHASE_STATUSES)[number];
 export type CrewAssignmentRole = (typeof CREW_ASSIGNMENT_ROLES)[number];
 export type DailyLogStatus = (typeof DAILY_LOG_STATUSES)[number];
+export type PunchItemStatus = (typeof PUNCH_ITEM_STATUSES)[number];
+export type PunchItemSeverity = (typeof PUNCH_ITEM_SEVERITIES)[number];
 export type ProjectEventType = (typeof PROJECT_EVENT_TYPES)[number];
+
+const PUNCH_ITEM_STATUS_TRANSITIONS: Record<
+  PunchItemStatus,
+  readonly PunchItemStatus[]
+> = {
+  open: ["in_progress"],
+  in_progress: ["ready_for_review"],
+  ready_for_review: ["closed"],
+  closed: [],
+};
+
+export const assertPunchItemTransition = (
+  currentStatus: PunchItemStatus,
+  nextStatus: PunchItemStatus,
+) => {
+  if (!PUNCH_ITEM_STATUS_TRANSITIONS[currentStatus].includes(nextStatus)) {
+    throw new Error(
+      `Invalid punch item transition from ${currentStatus} to ${nextStatus}.`,
+    );
+  }
+
+  return nextStatus;
+};
