@@ -112,6 +112,10 @@ export default function ProjectsShowPage() {
                 resource="crew-assignments"
                 meta={{ initialValues: { projectId: project?.id ?? "" } }}
               />
+              <CreateButton
+                resource="punch-items"
+                meta={{ initialValues: { projectId: project?.id ?? "" } }}
+              />
             </div>
           </CardContent>
         </Card>

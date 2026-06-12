@@ -1,6 +1,7 @@
 import type { IResourceItem } from "@refinedev/core";
 import { createElement } from "react";
 import {
+  CircleAlert,
   BriefcaseBusiness,
   ClipboardList,
   FolderKanban,
@@ -75,6 +76,21 @@ export const sitePulseResources: IResourceItem[] = [
     meta: {
       label: "Daily Logs",
       icon: createElement(ClipboardList),
+      roles: [
+        USER_ROLES.ADMIN,
+        USER_ROLES.PROJECT_MANAGER,
+        USER_ROLES.SITE_SUPERVISOR,
+      ],
+    },
+  },
+  {
+    name: "punch-items",
+    list: "/punch-items",
+    show: "/punch-items/show/:id",
+    create: "/punch-items/create",
+    meta: {
+      label: "Punch Items",
+      icon: createElement(CircleAlert),
       roles: [
         USER_ROLES.ADMIN,
         USER_ROLES.PROJECT_MANAGER,

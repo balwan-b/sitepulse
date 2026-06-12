@@ -27,6 +27,20 @@ export const dailyLogStatuses = [
   "locked",
 ] as const;
 
+export const punchItemStatuses = [
+  "open",
+  "in_progress",
+  "ready_for_review",
+  "closed",
+] as const;
+
+export const punchItemSeverities = [
+  "low",
+  "medium",
+  "high",
+  "critical",
+] as const;
+
 export const projectSchema = z.object({
   id: z.string(),
   code: z.string(),
@@ -95,6 +109,29 @@ export const dailyLogSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
+export const punchItemSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectCode: z.string().nullable().optional(),
+  projectName: z.string().nullable().optional(),
+  phaseId: z.string().nullable(),
+  phaseName: z.string().nullable().optional(),
+  title: z.string(),
+  description: z.string(),
+  severity: z.enum(punchItemSeverities),
+  location: z.string(),
+  assigneeId: z.string().nullable(),
+  assigneeName: z.string().nullable().optional(),
+  assigneeRole: z.string().nullable().optional(),
+  dueDate: z.string(),
+  status: z.enum(punchItemStatuses),
+  createdBy: z.string(),
+  createdByName: z.string().nullable().optional(),
+  isOverdue: z.boolean(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
+
 export const siteUserSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -109,4 +146,5 @@ export type ProjectRecord = z.infer<typeof projectSchema>;
 export type ProjectPhaseRecord = z.infer<typeof projectPhaseSchema>;
 export type CrewAssignmentRecord = z.infer<typeof crewAssignmentSchema>;
 export type DailyLogRecord = z.infer<typeof dailyLogSchema>;
+export type PunchItemRecord = z.infer<typeof punchItemSchema>;
 export type SiteUserRecord = z.infer<typeof siteUserSchema>;

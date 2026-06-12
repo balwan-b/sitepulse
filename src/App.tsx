@@ -26,6 +26,9 @@ import DailyLogsShowPage from "./pages/daily-logs/show";
 import { ForgotPassword } from "./pages/forgot-password";
 import { Login } from "./pages/login";
 import OperationsPage from "./pages/operations";
+import PunchItemsCreatePage from "./pages/punch-items/create";
+import PunchItemsListPage from "./pages/punch-items/list";
+import PunchItemsShowPage from "./pages/punch-items/show";
 import ProjectPhasesCreatePage from "./pages/project-phases/create";
 import ProjectPhasesListPage from "./pages/project-phases/list";
 import ProjectPhasesShowPage from "./pages/project-phases/show";
@@ -207,6 +210,48 @@ function App() {
                         ]}
                       >
                         <DailyLogsShowPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/punch-items"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <PunchItemsListPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/punch-items/create"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <PunchItemsCreatePage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/punch-items/show/:id"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <PunchItemsShowPage />
                       </RoleGuard>
                     }
                   />
