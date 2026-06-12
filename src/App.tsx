@@ -18,6 +18,9 @@ import { USER_ROLES } from "./constants";
 import { sitePulseResources } from "./lib/resource-adapters";
 import AccessDeniedPage from "./pages/access-denied";
 import ClientPortalPage from "./pages/client-portal";
+import ChangeOrdersCreatePage from "./pages/change-orders/create";
+import ChangeOrdersListPage from "./pages/change-orders/list";
+import ChangeOrdersShowPage from "./pages/change-orders/show";
 import CrewAssignmentsCreatePage from "./pages/crew-assignments/create";
 import DashboardPage from "./pages/dashboard";
 import DailyLogsCreatePage from "./pages/daily-logs/create";
@@ -252,6 +255,50 @@ function App() {
                         ]}
                       >
                         <PunchItemsShowPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/change-orders"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                          USER_ROLES.CLIENT,
+                        ]}
+                      >
+                        <ChangeOrdersListPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/change-orders/create"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <ChangeOrdersCreatePage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/change-orders/show/:id"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                          USER_ROLES.CLIENT,
+                        ]}
+                      >
+                        <ChangeOrdersShowPage />
                       </RoleGuard>
                     }
                   />

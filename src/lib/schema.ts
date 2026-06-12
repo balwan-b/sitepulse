@@ -34,6 +34,13 @@ export const punchItemStatuses = [
   "closed",
 ] as const;
 
+export const changeOrderStatuses = [
+  "draft",
+  "submitted",
+  "approved",
+  "rejected",
+] as const;
+
 export const punchItemSeverities = [
   "low",
   "medium",
@@ -132,6 +139,35 @@ export const punchItemSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
+export const changeOrderSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectCode: z.string().nullable().optional(),
+  projectName: z.string().nullable().optional(),
+  phaseId: z.string().nullable(),
+  phaseName: z.string().nullable().optional(),
+  title: z.string(),
+  description: z.string(),
+  reason: z.string().nullable(),
+  requestedAmount: z.number(),
+  requestedDays: z.number(),
+  approvedAmount: z.number().nullable(),
+  approvedDays: z.number().nullable(),
+  status: z.enum(changeOrderStatuses),
+  createdBy: z.string().nullable(),
+  createdByName: z.string().nullable().optional(),
+  submittedBy: z.string().nullable(),
+  submittedByName: z.string().nullable().optional(),
+  reviewedBy: z.string().nullable(),
+  reviewedByName: z.string().nullable().optional(),
+  submittedAt: z.string().nullable(),
+  reviewedAt: z.string().nullable(),
+  reviewNotes: z.string().nullable(),
+  canReview: z.boolean().optional(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
+
 export const siteUserSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -147,4 +183,5 @@ export type ProjectPhaseRecord = z.infer<typeof projectPhaseSchema>;
 export type CrewAssignmentRecord = z.infer<typeof crewAssignmentSchema>;
 export type DailyLogRecord = z.infer<typeof dailyLogSchema>;
 export type PunchItemRecord = z.infer<typeof punchItemSchema>;
+export type ChangeOrderRecord = z.infer<typeof changeOrderSchema>;
 export type SiteUserRecord = z.infer<typeof siteUserSchema>;

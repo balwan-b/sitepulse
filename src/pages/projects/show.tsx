@@ -116,6 +116,10 @@ export default function ProjectsShowPage() {
                 resource="punch-items"
                 meta={{ initialValues: { projectId: project?.id ?? "" } }}
               />
+              <CreateButton
+                resource="change-orders"
+                meta={{ initialValues: { projectId: project?.id ?? "" } }}
+              />
             </div>
           </CardContent>
         </Card>

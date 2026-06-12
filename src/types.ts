@@ -1,6 +1,7 @@
 import type { USER_ROLES } from "./constants";
 import type {
   CrewAssignmentRecord,
+  ChangeOrderRecord,
   DailyLogRecord,
   PunchItemRecord,
   ProjectPhaseRecord,
@@ -28,6 +29,7 @@ export type SignUpPayload = {
 
 export type {
   CrewAssignmentRecord,
+  ChangeOrderRecord,
   DailyLogRecord,
   PunchItemRecord,
   ProjectPhaseRecord,
