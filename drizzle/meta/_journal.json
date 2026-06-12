@@ -15,6 +15,13 @@
       "when": 1781193231215,
       "tag": "0001_spotty_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781240122699,
+      "tag": "0003_small_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }

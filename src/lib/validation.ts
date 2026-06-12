@@ -136,3 +136,21 @@ export const parseIsoDate = (value: unknown, field: string) => {
 
   return parsed;
 };
+
+export const parseDateOnly = (value: unknown, field: string) => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      `${field} must be a valid YYYY-MM-DD date.`,
+    );
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new AppError(400, "VALIDATION_ERROR", `${field} must be a valid date.`);
+  }
+
+  return parsed;
+};

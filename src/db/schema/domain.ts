@@ -9,7 +9,13 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-import { CREW_ASSIGNMENT_ROLES, PHASE_STATUSES, PROJECT_STATUSES } from "../../lib/status-rules.js";
+import {
+  CREW_ASSIGNMENT_ROLES,
+  DAILY_LOG_STATUSES,
+  PHASE_STATUSES,
+  PROJECT_EVENT_TYPES,
+  PROJECT_STATUSES,
+} from "../../lib/status-rules.js";
 import { user } from "./auth.js";
 
 const timestamps = {
@@ -25,6 +31,11 @@ export const phaseStatusEnum = pgEnum("phase_status", PHASE_STATUSES);
 export const crewAssignmentRoleEnum = pgEnum(
   "crew_assignment_role",
   CREW_ASSIGNMENT_ROLES,
+);
+export const dailyLogStatusEnum = pgEnum("daily_log_status", DAILY_LOG_STATUSES);
+export const projectEventTypeEnum = pgEnum(
+  "project_event_type",
+  PROJECT_EVENT_TYPES,
 );
 
 export const projects = pgTable(
@@ -104,6 +115,70 @@ export const crewAssignments = pgTable(
   ],
 );
 
+export const dailyLogs = pgTable(
+  "daily_logs",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    phaseId: text("phase_id").references(() => projectPhases.id, {
+      onDelete: "cascade",
+    }),
+    supervisorId: text("supervisor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    logDate: timestamp("log_date").notNull(),
+    workforceCount: integer("workforce_count").notNull(),
+    weather: text("weather").notNull(),
+    completedWork: text("completed_work").notNull(),
+    blockers: text("blockers"),
+    safetyNotes: text("safety_notes"),
+    status: dailyLogStatusEnum("status").default("draft").notNull(),
+    submittedAt: timestamp("submitted_at"),
+    ...timestamps,
+  },
+  (table) => [
+    index("daily_logs_project_id_idx").on(table.projectId),
+    index("daily_logs_phase_id_idx").on(table.phaseId),
+    index("daily_logs_supervisor_id_idx").on(table.supervisorId),
+    index("daily_logs_status_idx").on(table.status),
+    index("daily_logs_project_status_idx").on(table.projectId, table.status),
+    index("daily_logs_project_supervisor_date_idx").on(
+      table.projectId,
+      table.supervisorId,
+      table.logDate,
+    ),
+    index("daily_logs_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const projectEvents = pgTable(
+  "project_events",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    eventType: projectEventTypeEnum("event_type").notNull(),
+    summary: text("summary").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("project_events_project_id_idx").on(table.projectId),
+    index("project_events_entity_type_idx").on(table.entityType),
+    index("project_events_entity_id_idx").on(table.entityId),
+    index("project_events_event_type_idx").on(table.eventType),
+    index("project_events_created_by_idx").on(table.createdBy),
+    index("project_events_created_at_idx").on(table.createdAt),
+  ],
+);
+
 export const projectRelations = relations(projects, ({ one, many }) => ({
   projectManager: one(user, {
     fields: [projects.projectManagerId],
@@ -136,6 +211,34 @@ export const crewAssignmentRelations = relations(crewAssignments, ({ one }) => (
   }),
 }));
 
+export const dailyLogRelations = relations(dailyLogs, ({ one }) => ({
+  project: one(projects, {
+    fields: [dailyLogs.projectId],
+    references: [projects.id],
+  }),
+  phase: one(projectPhases, {
+    fields: [dailyLogs.phaseId],
+    references: [projectPhases.id],
+  }),
+  supervisor: one(user, {
+    fields: [dailyLogs.supervisorId],
+    references: [user.id],
+  }),
+}));
+
+export const projectEventRelations = relations(projectEvents, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectEvents.projectId],
+    references: [projects.id],
+  }),
+  createdByUser: one(user, {
+    fields: [projectEvents.createdBy],
+    references: [user.id],
+  }),
+}));
+
 export type Project = typeof projects.$inferSelect;
 export type ProjectPhase = typeof projectPhases.$inferSelect;
 export type CrewAssignment = typeof crewAssignments.$inferSelect;
+export type DailyLog = typeof dailyLogs.$inferSelect;
+export type ProjectEvent = typeof projectEvents.$inferSelect;
