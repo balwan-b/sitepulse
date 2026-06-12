@@ -387,8 +387,6 @@ export const createChangeOrder = async (
   payload: Record<string, unknown>,
 ) => {
   const values = changeOrderPayload(payload);
-  await assertCanWriteChangeOrders(actor, values.projectId);
-  await assertReferencedEntities(values);
 
   if (values.status !== "draft") {
     throw new AppError(
@@ -397,6 +395,9 @@ export const createChangeOrder = async (
       "Change orders must be created in draft status.",
     );
   }
+
+  await assertCanWriteChangeOrders(actor, values.projectId);
+  await assertReferencedEntities(values);
 
   const id = crypto.randomUUID();
 
