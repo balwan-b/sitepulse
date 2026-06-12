@@ -32,6 +32,13 @@ export const PUNCH_ITEM_STATUSES = [
   "closed",
 ] as const;
 
+export const CHANGE_ORDER_STATUSES = [
+  "draft",
+  "submitted",
+  "approved",
+  "rejected",
+] as const;
+
 export const PUNCH_ITEM_SEVERITIES = [
   "low",
   "medium",
@@ -61,6 +68,7 @@ export type CrewAssignmentRole = (typeof CREW_ASSIGNMENT_ROLES)[number];
 export type DailyLogStatus = (typeof DAILY_LOG_STATUSES)[number];
 export type PunchItemStatus = (typeof PUNCH_ITEM_STATUSES)[number];
 export type PunchItemSeverity = (typeof PUNCH_ITEM_SEVERITIES)[number];
+export type ChangeOrderStatus = (typeof CHANGE_ORDER_STATUSES)[number];
 export type ProjectEventType = (typeof PROJECT_EVENT_TYPES)[number];
 
 const PUNCH_ITEM_STATUS_TRANSITIONS: Record<
@@ -80,6 +88,29 @@ export const assertPunchItemTransition = (
   if (!PUNCH_ITEM_STATUS_TRANSITIONS[currentStatus].includes(nextStatus)) {
     throw new Error(
       `Invalid punch item transition from ${currentStatus} to ${nextStatus}.`,
+    );
+  }
+
+  return nextStatus;
+};
+
+const CHANGE_ORDER_STATUS_TRANSITIONS: Record<
+  ChangeOrderStatus,
+  readonly ChangeOrderStatus[]
+> = {
+  draft: ["submitted"],
+  submitted: ["approved", "rejected"],
+  approved: [],
+  rejected: [],
+};
+
+export const assertChangeOrderTransition = (
+  currentStatus: ChangeOrderStatus,
+  nextStatus: ChangeOrderStatus,
+) => {
+  if (!CHANGE_ORDER_STATUS_TRANSITIONS[currentStatus].includes(nextStatus)) {
+    throw new Error(
+      `Invalid change order transition from ${currentStatus} to ${nextStatus}.`,
     );
   }
 

@@ -12,6 +12,7 @@ import {
 import {
   CREW_ASSIGNMENT_ROLES,
   DAILY_LOG_STATUSES,
+  CHANGE_ORDER_STATUSES,
   PHASE_STATUSES,
   PUNCH_ITEM_SEVERITIES,
   PUNCH_ITEM_STATUSES,
@@ -35,6 +36,10 @@ export const crewAssignmentRoleEnum = pgEnum(
   CREW_ASSIGNMENT_ROLES,
 );
 export const dailyLogStatusEnum = pgEnum("daily_log_status", DAILY_LOG_STATUSES);
+export const changeOrderStatusEnum = pgEnum(
+  "change_order_status",
+  CHANGE_ORDER_STATUSES,
+);
 export const punchItemStatusEnum = pgEnum(
   "punch_item_status",
   PUNCH_ITEM_STATUSES,
@@ -225,6 +230,50 @@ export const punchItems = pgTable(
   ],
 );
 
+export const changeOrders = pgTable(
+  "change_orders",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    phaseId: text("phase_id").references(() => projectPhases.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    reason: text("reason").notNull(),
+    requestedAmount: integer("requested_amount").notNull(),
+    requestedDays: integer("requested_days").notNull(),
+    approvedAmount: integer("approved_amount"),
+    approvedDays: integer("approved_days"),
+    status: changeOrderStatusEnum("status").default("draft").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    submittedBy: text("submitted_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    reviewedBy: text("reviewed_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    submittedAt: timestamp("submitted_at"),
+    reviewedAt: timestamp("reviewed_at"),
+    reviewNotes: text("review_notes"),
+    ...timestamps,
+  },
+  (table) => [
+    index("change_orders_project_id_idx").on(table.projectId),
+    index("change_orders_phase_id_idx").on(table.phaseId),
+    index("change_orders_status_idx").on(table.status),
+    index("change_orders_created_by_idx").on(table.createdBy),
+    index("change_orders_submitted_by_idx").on(table.submittedBy),
+    index("change_orders_reviewed_by_idx").on(table.reviewedBy),
+    index("change_orders_project_status_idx").on(table.projectId, table.status),
+    index("change_orders_created_at_idx").on(table.createdAt),
+  ],
+);
+
 export const projectRelations = relations(projects, ({ one, many }) => ({
   projectManager: one(user, {
     fields: [projects.projectManagerId],
@@ -234,6 +283,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
   crewAssignments: many(crewAssignments),
   dailyLogs: many(dailyLogs),
   punchItems: many(punchItems),
+  changeOrders: many(changeOrders),
 }));
 
 export const projectPhaseRelations = relations(projectPhases, ({ one, many }) => ({
@@ -244,6 +294,7 @@ export const projectPhaseRelations = relations(projectPhases, ({ one, many }) =>
   crewAssignments: many(crewAssignments),
   dailyLogs: many(dailyLogs),
   punchItems: many(punchItems),
+  changeOrders: many(changeOrders),
 }));
 
 export const crewAssignmentRelations = relations(crewAssignments, ({ one }) => ({
@@ -306,9 +357,33 @@ export const punchItemRelations = relations(punchItems, ({ one }) => ({
   }),
 }));
 
+export const changeOrderRelations = relations(changeOrders, ({ one }) => ({
+  project: one(projects, {
+    fields: [changeOrders.projectId],
+    references: [projects.id],
+  }),
+  phase: one(projectPhases, {
+    fields: [changeOrders.phaseId],
+    references: [projectPhases.id],
+  }),
+  creator: one(user, {
+    fields: [changeOrders.createdBy],
+    references: [user.id],
+  }),
+  submitter: one(user, {
+    fields: [changeOrders.submittedBy],
+    references: [user.id],
+  }),
+  reviewer: one(user, {
+    fields: [changeOrders.reviewedBy],
+    references: [user.id],
+  }),
+}));
+
 export type Project = typeof projects.$inferSelect;
 export type ProjectPhase = typeof projectPhases.$inferSelect;
 export type CrewAssignment = typeof crewAssignments.$inferSelect;
 export type DailyLog = typeof dailyLogs.$inferSelect;
 export type ProjectEvent = typeof projectEvents.$inferSelect;
 export type PunchItem = typeof punchItems.$inferSelect;
+export type ChangeOrder = typeof changeOrders.$inferSelect;
