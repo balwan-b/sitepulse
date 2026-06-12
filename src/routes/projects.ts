@@ -3,6 +3,7 @@ import { Router, type Router as ExpressRouter } from "express";
 import { buildDataResponse, buildPaginatedResponse } from "../lib/api-response.js";
 import { requireAuthenticated } from "../lib/authorization.js";
 import { createProject, getProject, listProjects, updateProject } from "../services/projects.js";
+import { listProjectTimeline } from "../services/project-events.js";
 
 export const projectsRouter: ExpressRouter = Router();
 
@@ -23,6 +24,18 @@ projectsRouter.get("/:id", async (req, res, next) => {
     const actor = requireAuthenticated(req, "view this project");
     const result = await getProject(actor, req.params.id);
     res.status(200).json(buildDataResponse(result));
+  } catch (error) {
+    next(error);
+  }
+});
+
+projectsRouter.get("/:id/timeline", async (req, res, next) => {
+  try {
+    const actor = requireAuthenticated(req, "view this project timeline");
+    const result = await listProjectTimeline(actor, req.params.id, req.query);
+    res
+      .status(200)
+      .json(buildPaginatedResponse(result.data, result.page, result.limit, result.total));
   } catch (error) {
     next(error);
   }

@@ -21,6 +21,7 @@ import {
 } from "./middleware/request-context.js";
 import { crewAssignmentsRouter } from "./routes/crew-assignments.js";
 import { changeOrdersRouter } from "./routes/change-orders.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 import { dailyLogsRouter } from "./routes/daily-logs.js";
 import { projectPhasesRouter } from "./routes/project-phases.js";
 import { projectsRouter } from "./routes/projects.js";
@@ -91,6 +92,7 @@ app.get("/api/me", (req, res) => {
 });
 
 app.use("/api/projects", projectsRouter);
+app.use("/api/dashboard", dashboardRouter);
 app.use("/api/project-phases", projectPhasesRouter);
 app.use("/api/crew-assignments", crewAssignmentsRouter);
 app.use("/api/change-orders", changeOrdersRouter);
