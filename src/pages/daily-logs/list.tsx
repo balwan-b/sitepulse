@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { USER_ROLES } from "@/constants";
+import { getDailyLogsEmptyState } from "@/lib/empty-states";
 import type { DailyLogRecord, SessionUser } from "@/types";
 
 const formatDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString();
@@ -71,12 +72,7 @@ export default function DailyLogsListPage() {
   const logs = table.refineCore.result.data ?? [];
   const draftCount = logs.filter((log: DailyLogRecord) => log.status === "draft").length;
   const submittedCount = logs.filter((log: DailyLogRecord) => log.status === "submitted").length;
-  const emptyMessage =
-    identity?.role === USER_ROLES.SITE_SUPERVISOR
-      ? "No field logs yet. Your next recurring action starts by saving today's site report."
-      : identity?.role === USER_ROLES.PROJECT_MANAGER
-        ? "No supervisor logs are visible yet. Once field teams submit their first reports, they will appear here."
-        : "No daily logs are available yet.";
+  const emptyMessage = getDailyLogsEmptyState(identity?.role);
 
   return (
     <ListView>

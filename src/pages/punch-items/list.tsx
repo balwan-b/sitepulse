@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import type { PunchItemRecord, SessionUser } from "@/types";
+import { getPunchItemsEmptyState } from "@/lib/empty-states";
 
 const formatDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString();
 
@@ -99,12 +100,7 @@ export default function PunchItemsListPage() {
   const punchItems = table.refineCore.result.data ?? [];
   const overdueCount = punchItems.filter((item: PunchItemRecord) => item.isOverdue).length;
   const criticalCount = punchItems.filter((item: PunchItemRecord) => item.severity === "critical").length;
-  const emptyMessage =
-    identity?.role === USER_ROLES.PROJECT_MANAGER
-      ? "No field issues are open yet. Overdue and open work will surface here as soon as crews start logging punch items."
-      : identity?.role === USER_ROLES.SITE_SUPERVISOR
-        ? "No punch items yet. Capture the first field issue here when something needs follow-up."
-        : "No punch items are available yet.";
+  const emptyMessage = getPunchItemsEmptyState(identity?.role);
 
   return (
     <ListView>

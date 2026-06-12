@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { USER_ROLES } from "@/constants";
+import { getChangeOrdersEmptyState } from "@/lib/empty-states";
 import type { ChangeOrderRecord, SessionUser } from "@/types";
 
 const statusVariant: Record<
@@ -93,12 +94,7 @@ export default function ChangeOrdersListPage() {
     (sum: number, item: ChangeOrderRecord) => sum + (item.approvedAmount ?? 0),
     0,
   );
-  const emptyMessage =
-    identity?.role === USER_ROLES.CLIENT
-      ? "Approved change orders will appear here once your project team completes review."
-      : identity?.role === USER_ROLES.PROJECT_MANAGER
-        ? "No change orders are visible yet. Drafts and submitted requests will appear here for review."
-        : "No change orders are available yet.";
+  const emptyMessage = getChangeOrdersEmptyState(identity?.role);
 
   return (
     <ListView>

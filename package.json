@@ -88,7 +88,8 @@
     "dev": "refine dev",
     "build": "tsc && refine build",
     "start": "refine start",
-    "refine": "refine"
+    "refine": "refine",
+    "test": "node --import ../sitepulse-backend/node_modules/tsx/dist/loader.mjs --test src/**/*.test.ts"
   },
   "browserslist": {
     "production": [

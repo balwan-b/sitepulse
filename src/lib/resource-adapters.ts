@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { USER_ROLES } from "@/constants";
+import type { SitePulseUserRole } from "@/types";
 
 export const sitePulseResources: IResourceItem[] = [
   {
@@ -134,3 +135,9 @@ export const sitePulseResources: IResourceItem[] = [
     },
   },
 ];
+
+export const getResourcesForRole = (role: SitePulseUserRole) =>
+  sitePulseResources.filter((resource) => {
+    const allowedRoles = resource.meta?.roles as SitePulseUserRole[] | undefined;
+    return !allowedRoles || allowedRoles.includes(role);
+  });

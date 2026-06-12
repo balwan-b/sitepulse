@@ -13,7 +13,11 @@ export const USER_ROLES = {
 } as const;
 
 const getEnvVar = (key: string, fallback?: string): string => {
-  const value = import.meta.env[key] ?? fallback;
+  const env =
+    (import.meta as ImportMeta & {
+      env?: Record<string, string | undefined>;
+    }).env ?? {};
+  const value = env[key] ?? fallback;
 
   if (!value) {
     throw new Error(`Missing environment variable: ${key}`);
