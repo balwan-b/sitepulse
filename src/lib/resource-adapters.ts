@@ -68,6 +68,21 @@ export const sitePulseResources: IResourceItem[] = [
     },
   },
   {
+    name: "daily-logs",
+    list: "/daily-logs",
+    show: "/daily-logs/show/:id",
+    create: "/daily-logs/create",
+    meta: {
+      label: "Daily Logs",
+      icon: createElement(ClipboardList),
+      roles: [
+        USER_ROLES.ADMIN,
+        USER_ROLES.PROJECT_MANAGER,
+        USER_ROLES.SITE_SUPERVISOR,
+      ],
+    },
+  },
+  {
     name: "users",
     list: "/staff",
     meta: {

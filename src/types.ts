@@ -1,6 +1,7 @@
 import type { USER_ROLES } from "./constants";
 import type {
   CrewAssignmentRecord,
+  DailyLogRecord,
   ProjectPhaseRecord,
   ProjectRecord,
   SiteUserRecord,
@@ -24,4 +25,10 @@ export type SignUpPayload = {
   role: SitePulseUserRole;
 };
 
-export type { CrewAssignmentRecord, ProjectPhaseRecord, ProjectRecord, SiteUserRecord };
+export type {
+  CrewAssignmentRecord,
+  DailyLogRecord,
+  ProjectPhaseRecord,
+  ProjectRecord,
+  SiteUserRecord,
+};

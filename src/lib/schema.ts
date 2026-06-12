@@ -21,6 +21,12 @@ export const assignmentRoles = [
   "client",
 ] as const;
 
+export const dailyLogStatuses = [
+  "draft",
+  "submitted",
+  "locked",
+] as const;
+
 export const projectSchema = z.object({
   id: z.string(),
   code: z.string(),
@@ -68,6 +74,27 @@ export const crewAssignmentSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
+export const dailyLogSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectCode: z.string().nullable().optional(),
+  projectName: z.string().nullable().optional(),
+  phaseId: z.string().nullable(),
+  phaseName: z.string().nullable().optional(),
+  supervisorId: z.string(),
+  supervisorName: z.string().nullable().optional(),
+  logDate: z.string(),
+  workforceCount: z.number().optional(),
+  weather: z.string().optional(),
+  completedWork: z.string().optional(),
+  blockers: z.string().nullable().optional(),
+  safetyNotes: z.string().nullable().optional(),
+  status: z.enum(dailyLogStatuses),
+  submittedAt: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
+
 export const siteUserSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -81,4 +108,5 @@ export const siteUserSchema = z.object({
 export type ProjectRecord = z.infer<typeof projectSchema>;
 export type ProjectPhaseRecord = z.infer<typeof projectPhaseSchema>;
 export type CrewAssignmentRecord = z.infer<typeof crewAssignmentSchema>;
+export type DailyLogRecord = z.infer<typeof dailyLogSchema>;
 export type SiteUserRecord = z.infer<typeof siteUserSchema>;

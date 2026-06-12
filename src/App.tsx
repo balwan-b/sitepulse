@@ -20,6 +20,9 @@ import AccessDeniedPage from "./pages/access-denied";
 import ClientPortalPage from "./pages/client-portal";
 import CrewAssignmentsCreatePage from "./pages/crew-assignments/create";
 import DashboardPage from "./pages/dashboard";
+import DailyLogsCreatePage from "./pages/daily-logs/create";
+import DailyLogsListPage from "./pages/daily-logs/list";
+import DailyLogsShowPage from "./pages/daily-logs/show";
 import { ForgotPassword } from "./pages/forgot-password";
 import { Login } from "./pages/login";
 import OperationsPage from "./pages/operations";
@@ -166,6 +169,44 @@ function App() {
                         allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
                       >
                         <CrewAssignmentsCreatePage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/daily-logs"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <DailyLogsListPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/daily-logs/create"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SITE_SUPERVISOR]}
+                      >
+                        <DailyLogsCreatePage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/daily-logs/show/:id"
+                    element={
+                      <RoleGuard
+                        allowedRoles={[
+                          USER_ROLES.ADMIN,
+                          USER_ROLES.PROJECT_MANAGER,
+                          USER_ROLES.SITE_SUPERVISOR,
+                        ]}
+                      >
+                        <DailyLogsShowPage />
                       </RoleGuard>
                     }
                   />
