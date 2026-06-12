@@ -178,6 +178,55 @@ export const siteUserSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
+export const projectTimelineEventSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectCode: z.string().nullable().optional(),
+  projectName: z.string().nullable().optional(),
+  entityType: z.string(),
+  entityId: z.string(),
+  eventType: z.string(),
+  summary: z.string(),
+  createdBy: z.string().nullable(),
+  createdByName: z.string().nullable().optional(),
+  createdAt: z.string().nullable(),
+});
+
+export const dashboardSchema = z.object({
+  role: z.string(),
+  generatedAt: z.string(),
+  stats: z.object({
+    totalVisibleProjects: z.number(),
+    activeProjects: z.number(),
+    atRiskProjects: z.number(),
+    openPunchItems: z.number(),
+    overduePunchItems: z.number(),
+    submittedDailyLogs: z.number(),
+    draftDailyLogs: z.number(),
+    pendingChangeOrders: z.number(),
+    approvedChangeOrders: z.number(),
+    totalPhases: z.number(),
+    totalAssignments: z.number(),
+  }),
+  alerts: z.array(z.string()),
+  spotlightProjects: z.array(
+    z.object({
+      id: z.string(),
+      code: z.string(),
+      name: z.string(),
+      clientName: z.string(),
+      location: z.string(),
+      status: z.enum(projectStatuses),
+      projectManagerName: z.string().nullable().optional(),
+      openPunchItems: z.number(),
+      submittedChangeOrders: z.number(),
+      approvedChangeOrders: z.number(),
+      phaseCount: z.number(),
+    }),
+  ),
+  recentEvents: z.array(projectTimelineEventSchema),
+});
+
 export type ProjectRecord = z.infer<typeof projectSchema>;
 export type ProjectPhaseRecord = z.infer<typeof projectPhaseSchema>;
 export type CrewAssignmentRecord = z.infer<typeof crewAssignmentSchema>;
@@ -185,3 +234,5 @@ export type DailyLogRecord = z.infer<typeof dailyLogSchema>;
 export type PunchItemRecord = z.infer<typeof punchItemSchema>;
 export type ChangeOrderRecord = z.infer<typeof changeOrderSchema>;
 export type SiteUserRecord = z.infer<typeof siteUserSchema>;
+export type ProjectTimelineEventRecord = z.infer<typeof projectTimelineEventSchema>;
+export type DashboardRecord = z.infer<typeof dashboardSchema>;

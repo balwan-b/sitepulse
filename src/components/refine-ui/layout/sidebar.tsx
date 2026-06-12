@@ -53,6 +53,7 @@ export function Sidebar() {
           "gap-2",
           "pt-2",
           "pb-2",
+          "sitepulse-grid",
           "border-r",
           "border-border",
           {
@@ -260,20 +261,17 @@ function SidebarHeader() {
         )}
       >
         <div>{title.icon}</div>
-        <h2
-          className={cn(
-            "text-sm",
-            "font-bold",
-            "transition-opacity",
-            "duration-200",
-            {
-              "opacity-0": !open,
-              "opacity-100": open,
-            }
-          )}
+        <div
+          className={cn("transition-opacity", "duration-200", {
+            "opacity-0": !open,
+            "opacity-100": open,
+          })}
         >
-          {title.text}
-        </h2>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-primary">
+            Jobsite OS
+          </p>
+          <h2 className="text-sm font-bold">{title.text}</h2>
+        </div>
       </div>
 
       <ShadcnSidebarTrigger

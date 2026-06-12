@@ -7,6 +7,7 @@ import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { ListView, ListViewHeader } from "@/components/refine-ui/views/list-view";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { USER_ROLES } from "@/constants";
 import type { ChangeOrderRecord, SessionUser } from "@/types";
 
@@ -86,6 +87,12 @@ export default function ChangeOrdersListPage() {
   });
 
   const rows = table.reactTable.getRowModel().rows;
+  const changeOrders = table.refineCore.result.data ?? [];
+  const submittedCount = changeOrders.filter((item: ChangeOrderRecord) => item.status === "submitted").length;
+  const approvedValue = changeOrders.reduce(
+    (sum: number, item: ChangeOrderRecord) => sum + (item.approvedAmount ?? 0),
+    0,
+  );
   const emptyMessage =
     identity?.role === USER_ROLES.CLIENT
       ? "Approved change orders will appear here once your project team completes review."
@@ -99,6 +106,23 @@ export default function ChangeOrdersListPage() {
         resource="change-orders"
         canCreate={identity?.role !== USER_ROLES.CLIENT}
       />
+      <section className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          label="Change orders on page"
+          value={changeOrders.length}
+          note={`${submittedCount} submitted and awaiting outcome`}
+        />
+        <SummaryCard
+          label="Projects affected"
+          value={new Set(changeOrders.map((item: ChangeOrderRecord) => item.projectId)).size}
+          note="Visible project spread for change requests"
+        />
+        <SummaryCard
+          label="Approved value"
+          value={`$${approvedValue.toLocaleString("en-US")}`}
+          note="Approved commercial movement in this view"
+        />
+      </section>
       {rows.length ? (
         <DataTable table={table} />
       ) : (
@@ -109,5 +133,27 @@ export default function ChangeOrdersListPage() {
         </Card>
       )}
     </ListView>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+      </CardContent>
+    </Card>
   );
 }

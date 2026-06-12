@@ -1,17 +1,31 @@
-import { useList, useNavigation, useOne, useResourceParams } from "@refinedev/core";
+import { useGetIdentity, useList, useNavigation, useOne, useResourceParams } from "@refinedev/core";
+import { useEffect, useState } from "react";
 
 import { CreateButton } from "@/components/refine-ui/buttons/create";
 import { ShowView, ShowViewHeader } from "@/components/refine-ui/views/show-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { CrewAssignmentRecord, ProjectPhaseRecord, ProjectRecord } from "@/types";
+import { USER_ROLES } from "@/constants";
+import { fetchProjectTimeline } from "@/lib/dashboard";
+import type {
+  ChangeOrderRecord,
+  CrewAssignmentRecord,
+  ProjectPhaseRecord,
+  ProjectRecord,
+  ProjectTimelineEventRecord,
+  PunchItemRecord,
+  SessionUser,
+} from "@/types";
 
 const formatValue = (value: string | number | null | undefined) =>
   value == null || value === "" ? "Not set" : value;
 
 export default function ProjectsShowPage() {
   const { id } = useResourceParams();
+  const { data: identity } = useGetIdentity<SessionUser>();
   const { show } = useNavigation();
+  const [timeline, setTimeline] = useState<ProjectTimelineEventRecord[]>([]);
 
   const projectQuery = useOne<ProjectRecord>({
     resource: "projects",
@@ -63,8 +77,85 @@ export default function ProjectsShowPage() {
     },
   });
 
+  const punchItemsQuery = useList<PunchItemRecord>({
+    resource: "punch-items",
+    filters: id
+      ? [
+          {
+            field: "projectId",
+            operator: "eq",
+            value: id,
+          },
+        ]
+      : [],
+    pagination: {
+      currentPage: 1,
+      pageSize: 20,
+    },
+    queryOptions: {
+      enabled: Boolean(id) && identity?.role !== USER_ROLES.CLIENT,
+    },
+  });
+
+  const changeOrdersQuery = useList<ChangeOrderRecord>({
+    resource: "change-orders",
+    filters: id
+      ? [
+          {
+            field: "projectId",
+            operator: "eq",
+            value: id,
+          },
+        ]
+      : [],
+    pagination: {
+      currentPage: 1,
+      pageSize: 20,
+    },
+    queryOptions: {
+      enabled: Boolean(id),
+    },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!id || typeof id !== "string") {
+      return;
+    }
+
+    const loadTimeline = async () => {
+      try {
+        const events = await fetchProjectTimeline(id, 8);
+        if (!cancelled) {
+          setTimeline(events);
+        }
+      } catch {
+        if (!cancelled) {
+          setTimeline([]);
+        }
+      }
+    };
+
+    void loadTimeline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
   const phases = phasesQuery.result.data ?? [];
   const assignments = assignmentsQuery.result.data ?? [];
+  const punchItems = punchItemsQuery.result.data ?? [];
+  const changeOrders = changeOrdersQuery.result.data ?? [];
+  const approvedChangeOrders = changeOrders.filter((item) => item.status === "approved").length;
+  const submittedChangeOrders = changeOrders.filter((item) => item.status === "submitted").length;
+  const canCreatePhases =
+    identity?.role === USER_ROLES.ADMIN || identity?.role === USER_ROLES.PROJECT_MANAGER;
+  const canCreateAssignments =
+    identity?.role === USER_ROLES.ADMIN || identity?.role === USER_ROLES.PROJECT_MANAGER;
+  const canCreatePunchItems = identity?.role !== USER_ROLES.CLIENT;
+  const canCreateChangeOrders = identity?.role !== USER_ROLES.CLIENT;
 
   return (
     <ShowView>
@@ -98,28 +189,55 @@ export default function ProjectsShowPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Next Actions</CardTitle>
+            <CardTitle>Operations snapshot</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Use this project as the anchor for early phase and staffing workflows.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Snapshot label="Phases" value={phases.length} />
+              <Snapshot label="Assignments" value={assignments.length} />
+              {identity?.role !== USER_ROLES.CLIENT ? (
+                <Snapshot
+                  label="Open punch items"
+                  value={punchItems.filter((item) => item.status !== "closed").length}
+                />
+              ) : null}
+              <Snapshot
+                label={identity?.role === USER_ROLES.CLIENT ? "Approved change orders" : "Pending change orders"}
+                value={
+                  identity?.role === USER_ROLES.CLIENT
+                    ? approvedChangeOrders
+                    : submittedChangeOrders
+                }
+              />
+            </div>
             <Separator />
             <div className="flex flex-wrap gap-2">
-              <CreateButton
-                resource="project-phases"
-                meta={{ initialValues: { projectId: project?.id ?? "" } }}
-              />
-              <CreateButton
-                resource="crew-assignments"
-                meta={{ initialValues: { projectId: project?.id ?? "" } }}
-              />
-              <CreateButton
-                resource="punch-items"
-                meta={{ initialValues: { projectId: project?.id ?? "" } }}
-              />
-              <CreateButton
-                resource="change-orders"
-                meta={{ initialValues: { projectId: project?.id ?? "" } }}
-              />
+              {canCreatePhases ? (
+                <CreateButton
+                  resource="project-phases"
+                  meta={{ initialValues: { projectId: project?.id ?? "" } }}
+                />
+              ) : null}
+              {canCreateAssignments ? (
+                <CreateButton
+                  resource="crew-assignments"
+                  meta={{ initialValues: { projectId: project?.id ?? "" } }}
+                />
+              ) : null}
+              {canCreatePunchItems ? (
+                <CreateButton
+                  resource="punch-items"
+                  meta={{ initialValues: { projectId: project?.id ?? "" } }}
+                />
+              ) : null}
+              {canCreateChangeOrders ? (
+                <>
+                  <CreateButton
+                    resource="change-orders"
+                    meta={{ initialValues: { projectId: project?.id ?? "" } }}
+                  />
+                </>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -182,6 +300,47 @@ export default function ProjectsShowPage() {
           </CardContent>
         </Card>
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Project timeline</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {timeline.length ? (
+            timeline.map((event) => (
+              <div key={event.id} className="rounded-md border px-3 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{event.eventType.replaceAll("_", " ")}</Badge>
+                  <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                    {event.createdAt
+                      ? new Date(event.createdAt).toLocaleString()
+                      : "Recently"}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-medium">{event.summary}</p>
+                {event.createdByName ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Logged by {event.createdByName}
+                  </p>
+                ) : null}
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No timeline activity is available for this project yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </ShowView>
+  );
+}
+
+function Snapshot({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border bg-muted/35 px-3 py-3">
+      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-xl font-semibold text-foreground">{value}</p>
+    </div>
   );
 }

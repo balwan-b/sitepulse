@@ -8,6 +8,7 @@ import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { ListView, ListViewHeader } from "@/components/refine-ui/views/list-view";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import type { PunchItemRecord, SessionUser } from "@/types";
 
 const formatDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString();
@@ -95,6 +96,9 @@ export default function PunchItemsListPage() {
   });
 
   const rows = table.reactTable.getRowModel().rows;
+  const punchItems = table.refineCore.result.data ?? [];
+  const overdueCount = punchItems.filter((item: PunchItemRecord) => item.isOverdue).length;
+  const criticalCount = punchItems.filter((item: PunchItemRecord) => item.severity === "critical").length;
   const emptyMessage =
     identity?.role === USER_ROLES.PROJECT_MANAGER
       ? "No field issues are open yet. Overdue and open work will surface here as soon as crews start logging punch items."
@@ -105,6 +109,23 @@ export default function PunchItemsListPage() {
   return (
     <ListView>
       <ListViewHeader resource="punch-items" />
+      <section className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          label="Open issues on page"
+          value={punchItems.length}
+          note={`${overdueCount} overdue and ${criticalCount} critical`}
+        />
+        <SummaryCard
+          label="Projects affected"
+          value={new Set(punchItems.map((item: PunchItemRecord) => item.projectId)).size}
+          note="Visible field issue distribution"
+        />
+        <SummaryCard
+          label="Assigned work"
+          value={punchItems.filter((item: PunchItemRecord) => item.assigneeId).length}
+          note="Items with a named owner already attached"
+        />
+      </section>
       {rows.length ? (
         <DataTable table={table} />
       ) : (
@@ -115,5 +136,27 @@ export default function PunchItemsListPage() {
         </Card>
       )}
     </ListView>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+      </CardContent>
+    </Card>
   );
 }

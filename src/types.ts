@@ -2,7 +2,9 @@ import type { USER_ROLES } from "./constants";
 import type {
   CrewAssignmentRecord,
   ChangeOrderRecord,
+  DashboardRecord,
   DailyLogRecord,
+  ProjectTimelineEventRecord,
   PunchItemRecord,
   ProjectPhaseRecord,
   ProjectRecord,
@@ -30,7 +32,9 @@ export type SignUpPayload = {
 export type {
   CrewAssignmentRecord,
   ChangeOrderRecord,
+  DashboardRecord,
   DailyLogRecord,
+  ProjectTimelineEventRecord,
   PunchItemRecord,
   ProjectPhaseRecord,
   ProjectRecord,

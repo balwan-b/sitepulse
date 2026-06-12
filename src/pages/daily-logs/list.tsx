@@ -7,6 +7,7 @@ import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { ListView, ListViewHeader } from "@/components/refine-ui/views/list-view";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { USER_ROLES } from "@/constants";
 import type { DailyLogRecord, SessionUser } from "@/types";
 
@@ -67,6 +68,9 @@ export default function DailyLogsListPage() {
   });
 
   const rows = table.reactTable.getRowModel().rows;
+  const logs = table.refineCore.result.data ?? [];
+  const draftCount = logs.filter((log: DailyLogRecord) => log.status === "draft").length;
+  const submittedCount = logs.filter((log: DailyLogRecord) => log.status === "submitted").length;
   const emptyMessage =
     identity?.role === USER_ROLES.SITE_SUPERVISOR
       ? "No field logs yet. Your next recurring action starts by saving today's site report."
@@ -83,6 +87,23 @@ export default function DailyLogsListPage() {
           identity?.role === USER_ROLES.SITE_SUPERVISOR
         }
       />
+      <section className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          label="Logs on page"
+          value={logs.length}
+          note={`${submittedCount} submitted and ${draftCount} drafts`}
+        />
+        <SummaryCard
+          label="Projects represented"
+          value={new Set(logs.map((log: DailyLogRecord) => log.projectId)).size}
+          note="Visible active field reporting spread"
+        />
+        <SummaryCard
+          label="Supervisors reporting"
+          value={new Set(logs.map((log: DailyLogRecord) => log.supervisorId)).size}
+          note="Distinct supervisors visible in this table"
+        />
+      </section>
       {rows.length ? (
         <DataTable table={table} />
       ) : (
@@ -93,5 +114,27 @@ export default function DailyLogsListPage() {
         </Card>
       )}
     </ListView>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+      </CardContent>
+    </Card>
   );
 }

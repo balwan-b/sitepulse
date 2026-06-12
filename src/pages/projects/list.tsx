@@ -5,6 +5,7 @@ import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { ListView, ListViewHeader } from "@/components/refine-ui/views/list-view";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ProjectRecord } from "@/types";
 
 const formatCurrency = (value: number) =>
@@ -67,10 +68,57 @@ export default function ProjectsListPage() {
     },
   });
 
+  const projects = table.refineCore.result.data ?? [];
+  const activeCount = projects.filter((project: ProjectRecord) => project.status === "active").length;
+  const atRiskCount = projects.filter((project: ProjectRecord) => project.status === "at_risk").length;
+  const contractTotal = projects.reduce(
+    (sum: number, project: ProjectRecord) => sum + project.contractValue,
+    0,
+  );
+
   return (
     <ListView>
       <ListViewHeader resource="projects" />
+      <section className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          label="Projects on page"
+          value={projects.length}
+          note={`${activeCount} active and ${atRiskCount} at risk`}
+        />
+        <SummaryCard
+          label="Contract value"
+          value={formatCurrency(contractTotal)}
+          note="Visible portfolio slice in this current table view"
+        />
+        <SummaryCard
+          label="Managed accounts"
+          value={projects.filter((project: ProjectRecord) => project.projectManagerName).length}
+          note="Projects with an assigned project manager"
+        />
+      </section>
       <DataTable table={table} />
     </ListView>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{note}</p>
+      </CardContent>
+    </Card>
   );
 }
