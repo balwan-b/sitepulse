@@ -2,7 +2,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useGetIdentity } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 
-import { USER_ROLES } from "@/constants";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { ListView, ListViewHeader } from "@/components/refine-ui/views/list-view";

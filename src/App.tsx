@@ -3,7 +3,7 @@ import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { ClipboardList } from "lucide-react";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
-import type { ReactNode } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import routerProvider, {
   DocumentTitleHandler,
   NavigateToResource,
@@ -16,33 +16,52 @@ import { useNotificationProvider } from "./components/refine-ui/notification/use
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import { USER_ROLES } from "./constants";
 import { sitePulseResources } from "./lib/resource-adapters";
-import AccessDeniedPage from "./pages/access-denied";
-import ClientPortalPage from "./pages/client-portal";
-import ChangeOrdersCreatePage from "./pages/change-orders/create";
-import ChangeOrdersListPage from "./pages/change-orders/list";
-import ChangeOrdersShowPage from "./pages/change-orders/show";
-import CrewAssignmentsCreatePage from "./pages/crew-assignments/create";
-import DashboardPage from "./pages/dashboard";
-import DailyLogsCreatePage from "./pages/daily-logs/create";
-import DailyLogsListPage from "./pages/daily-logs/list";
-import DailyLogsShowPage from "./pages/daily-logs/show";
-import { ForgotPassword } from "./pages/forgot-password";
-import { Login } from "./pages/login";
-import OperationsPage from "./pages/operations";
-import PunchItemsCreatePage from "./pages/punch-items/create";
-import PunchItemsListPage from "./pages/punch-items/list";
-import PunchItemsShowPage from "./pages/punch-items/show";
-import ProjectPhasesCreatePage from "./pages/project-phases/create";
-import ProjectPhasesListPage from "./pages/project-phases/list";
-import ProjectPhasesShowPage from "./pages/project-phases/show";
-import ProjectsCreatePage from "./pages/projects/create";
-import ProjectsListPage from "./pages/projects/list";
-import ProjectsShowPage from "./pages/projects/show";
-import { Register } from "./pages/register";
-import StaffListPage from "./pages/staff/list";
 import { authProvider } from "./providers/auth";
 import { dataProvider } from "./providers/data";
 import type { SessionUser, SitePulseUserRole } from "./types";
+
+const AccessDeniedPage = lazy(() => import("./pages/access-denied"));
+const ClientPortalPage = lazy(() => import("./pages/client-portal"));
+const ChangeOrdersCreatePage = lazy(() => import("./pages/change-orders/create"));
+const ChangeOrdersListPage = lazy(() => import("./pages/change-orders/list"));
+const ChangeOrdersShowPage = lazy(() => import("./pages/change-orders/show"));
+const CrewAssignmentsCreatePage = lazy(() => import("./pages/crew-assignments/create"));
+const DashboardPage = lazy(() => import("./pages/dashboard"));
+const DailyLogsCreatePage = lazy(() => import("./pages/daily-logs/create"));
+const DailyLogsListPage = lazy(() => import("./pages/daily-logs/list"));
+const DailyLogsShowPage = lazy(() => import("./pages/daily-logs/show"));
+const ForgotPassword = lazy(() =>
+  import("./pages/forgot-password").then((module) => ({
+    default: module.ForgotPassword,
+  })),
+);
+const Login = lazy(() =>
+  import("./pages/login").then((module) => ({
+    default: module.Login,
+  })),
+);
+const OperationsPage = lazy(() => import("./pages/operations"));
+const PunchItemsCreatePage = lazy(() => import("./pages/punch-items/create"));
+const PunchItemsListPage = lazy(() => import("./pages/punch-items/list"));
+const PunchItemsShowPage = lazy(() => import("./pages/punch-items/show"));
+const ProjectPhasesCreatePage = lazy(() => import("./pages/project-phases/create"));
+const ProjectPhasesListPage = lazy(() => import("./pages/project-phases/list"));
+const ProjectPhasesShowPage = lazy(() => import("./pages/project-phases/show"));
+const ProjectsCreatePage = lazy(() => import("./pages/projects/create"));
+const ProjectsListPage = lazy(() => import("./pages/projects/list"));
+const ProjectsShowPage = lazy(() => import("./pages/projects/show"));
+const Register = lazy(() =>
+  import("./pages/register").then((module) => ({
+    default: module.Register,
+  })),
+);
+const StaffListPage = lazy(() => import("./pages/staff/list"));
+
+const RouteLoader = () => (
+  <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border bg-card/70">
+    <p className="text-sm text-muted-foreground">Loading workspace...</p>
+  </div>
+);
 
 function App() {
   return (
@@ -65,281 +84,278 @@ function App() {
               }}
               resources={sitePulseResources}
             >
-              <Routes>
-                <Route
-                  element={
-                    <Authenticated key="public-routes" fallback={<Outlet />}>
-                      <NavigateToResource fallbackTo="/" />
-                    </Authenticated>
-                  }
-                >
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                </Route>
+              <Suspense fallback={<RouteLoader />}>
+                <Routes>
+                  <Route
+                    element={
+                      <Authenticated key="public-routes" fallback={<Outlet />}>
+                        <NavigateToResource fallbackTo="/" />
+                      </Authenticated>
+                    }
+                  >
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                  </Route>
 
-                <Route
-                  element={
-                    <Authenticated key="private-routes" fallback={<Login />}>
-                      <Layout>
-                        <Outlet />
-                      </Layout>
-                    </Authenticated>
-                  }
-                >
-                  <Route index element={<DashboardPage />} />
                   <Route
-                    path="/projects"
                     element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ProjectsListPage />
-                      </RoleGuard>
+                      <Authenticated key="private-routes" fallback={<Login />}>
+                        <Layout>
+                          <Outlet />
+                        </Layout>
+                      </Authenticated>
                     }
-                  />
-                  <Route
-                    path="/projects/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN]}
-                      >
-                        <ProjectsCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/projects/show/:id"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ProjectsShowPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/project-phases"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ProjectPhasesListPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/project-phases/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
-                      >
-                        <ProjectPhasesCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/project-phases/show/:id"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ProjectPhasesShowPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/crew-assignments/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
-                      >
-                        <CrewAssignmentsCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/daily-logs"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <DailyLogsListPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/daily-logs/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SITE_SUPERVISOR]}
-                      >
-                        <DailyLogsCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/daily-logs/show/:id"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <DailyLogsShowPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/punch-items"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <PunchItemsListPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/punch-items/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <PunchItemsCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/punch-items/show/:id"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <PunchItemsShowPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/change-orders"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ChangeOrdersListPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/change-orders/create"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <ChangeOrdersCreatePage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/change-orders/show/:id"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                          USER_ROLES.CLIENT,
-                        ]}
-                      >
-                        <ChangeOrdersShowPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/staff"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
-                      >
-                        <StaffListPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/operations"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[
-                          USER_ROLES.ADMIN,
-                          USER_ROLES.PROJECT_MANAGER,
-                          USER_ROLES.SITE_SUPERVISOR,
-                        ]}
-                      >
-                        <OperationsPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/client-portal"
-                    element={
-                      <RoleGuard
-                        allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CLIENT]}
-                      >
-                        <ClientPortalPage />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route path="/access-denied" element={<AccessDeniedPage />} />
-                </Route>
-              </Routes>
-
+                  >
+                    <Route index element={<DashboardPage />} />
+                    <Route
+                      path="/projects"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ProjectsListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/projects/create"
+                      element={
+                        <RoleGuard allowedRoles={[USER_ROLES.ADMIN]}>
+                          <ProjectsCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/projects/show/:id"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ProjectsShowPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/project-phases"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ProjectPhasesListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/project-phases/create"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                        >
+                          <ProjectPhasesCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/project-phases/show/:id"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ProjectPhasesShowPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/crew-assignments/create"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                        >
+                          <CrewAssignmentsCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/daily-logs"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <DailyLogsListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/daily-logs/create"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SITE_SUPERVISOR]}
+                        >
+                          <DailyLogsCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/daily-logs/show/:id"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <DailyLogsShowPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/punch-items"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <PunchItemsListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/punch-items/create"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <PunchItemsCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/punch-items/show/:id"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <PunchItemsShowPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/change-orders"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ChangeOrdersListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/change-orders/create"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <ChangeOrdersCreatePage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/change-orders/show/:id"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                            USER_ROLES.CLIENT,
+                          ]}
+                        >
+                          <ChangeOrdersShowPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/staff"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                        >
+                          <StaffListPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/operations"
+                      element={
+                        <RoleGuard
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
+                        >
+                          <OperationsPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route
+                      path="/client-portal"
+                      element={
+                        <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CLIENT]}>
+                          <ClientPortalPage />
+                        </RoleGuard>
+                      }
+                    />
+                    <Route path="/access-denied" element={<AccessDeniedPage />} />
+                  </Route>
+                </Routes>
+              </Suspense>
               <Toaster />
               <RefineKbar />
               <UnsavedChangesNotifier />

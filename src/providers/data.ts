@@ -167,6 +167,7 @@ export const dataProvider: DataProvider = {
   >(
     _params: CreateManyParams<TVariables>,
   ) => {
+    void _params;
     await notImplemented("createMany");
     return { data: [] as TData[] };
   },
@@ -176,6 +177,7 @@ export const dataProvider: DataProvider = {
   >(
     _params: UpdateManyParams<TVariables>,
   ) => {
+    void _params;
     await notImplemented("updateMany");
     return { data: [] as UpdateManyResponse<TData>["data"] };
   },
@@ -185,6 +187,7 @@ export const dataProvider: DataProvider = {
   >(
     _params: DeleteOneParams<TVariables>,
   ) => {
+    void _params;
     await notImplemented("deleteOne");
     return { data: {} as DeleteOneResponse<TData>["data"] };
   },
@@ -194,6 +197,7 @@ export const dataProvider: DataProvider = {
   >(
     _params: DeleteManyParams<TVariables>,
   ) => {
+    void _params;
     await notImplemented("deleteMany");
     return { data: [] as DeleteManyResponse<TData>["data"] };
   },

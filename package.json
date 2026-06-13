@@ -85,11 +85,13 @@
     "tailwindcss": "^4.1.4"
   },
   "scripts": {
-    "dev": "refine dev",
-    "build": "tsc && refine build",
-    "start": "refine start",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "start": "vite preview --host 0.0.0.0",
+    "lint": "eslint src",
     "refine": "refine",
-    "test": "node --import ../sitepulse-backend/node_modules/tsx/dist/loader.mjs --test src/**/*.test.ts"
+    "test": "node --import ../sitepulse-backend/node_modules/tsx/dist/loader.mjs --test src/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "browserslist": {
     "production": [

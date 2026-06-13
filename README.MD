@@ -1,48 +1,28 @@
-# sitepulse-frontend
+# SitePulse Frontend
 
-<div align="center" style="margin: 30px;">
-    <a href="https://refine.dev">
-    <img alt="refine logo" src="https://refine.ams3.cdn.digitaloceanspaces.com/readme/refine-readme-banner.png">
-    </a>
-</div>
-<br/>
+The frontend is a React 19 + Refine application tailored to the SitePulse construction-operations demo. It provides role-aware dashboards and workflow screens for projects, phases, daily logs, punch items, change orders, and the client portal.
 
-This [Refine](https://github.com/refinedev/refine) project was generated with [create refine-app](https://github.com/refinedev/refine/tree/master/packages/create-refine-app).
-
-## Getting Started
-
-A React Framework for building internal tools, admin panels, dashboards & B2B apps with unmatched flexibility ✨
-
-Refine's hooks and components simplifies the development process and eliminates the repetitive tasks by providing industry-standard solutions for crucial aspects of a project, including authentication, access control, routing, networking, state management, and i18n.
-
-## Available Scripts
-
-### Running the development server.
+## Local Commands
 
 ```bash
-    pnpm dev
+pnpm dev
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm start
 ```
 
-### Building for production.
+## Environment
+
+Copy `.env.example` to `.env` when you need to point the app at a non-default backend.
 
 ```bash
-    pnpm build
+VITE_BACKEND_BASE_URL=http://localhost:4000
 ```
 
-### Running the production server.
+## Production Notes
 
-```bash
-    pnpm start
-```
-
-## Learn More
-
-To learn more about **Refine**, please check out the [Documentation](https://refine.dev/docs)
-
-- **REST Data Provider** [Docs](https://refine.dev/docs/core/providers/data-provider/#overview)
-- **shadcn/ui** [Docs](https://refine.dev/docs/guides-concepts/general-concepts/#headless-concept)
-- **React Router** [Docs](https://refine.dev/docs/core/providers/router-provider/)
-
-## License
-
-MIT
+- `pnpm build` runs TypeScript compilation and a Vite production build.
+- Route-level lazy loading keeps the initial bundle smaller for dashboard-first navigation.
+- `pnpm start` serves the built app through Vite preview for local smoke testing.
