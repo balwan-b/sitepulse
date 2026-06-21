@@ -1,0 +1,128 @@
+{
+  "accounts": [
+    {
+      "id": "user-admin-001",
+      "role": "admin",
+      "name": "Avery Admin",
+      "email": "admin@sitepulse.demo",
+      "password": "DemoPass!123"
+    },
+    {
+      "id": "user-pm-001",
+      "role": "project_manager",
+      "name": "Priya Manager",
+      "email": "pm@sitepulse.demo",
+      "password": "DemoPass!123"
+    },
+    {
+      "id": "user-supervisor-001",
+      "role": "site_supervisor",
+      "name": "Sam Supervisor",
+      "email": "supervisor@sitepulse.demo",
+      "password": "DemoPass!123"
+    },
+    {
+      "id": "user-client-001",
+      "role": "client",
+      "name": "Casey Client",
+      "email": "client@sitepulse.demo",
+      "password": "DemoPass!123"
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-north-yard",
+      "code": "SP-NORTH-001",
+      "name": "North Yard Logistics Hub",
+      "clientName": "Atlas Freight",
+      "location": "Pune",
+      "contractValue": 1250000,
+      "status": "active",
+      "projectManagerId": "user-pm-001"
+    },
+    {
+      "id": "project-riverfront",
+      "code": "SP-RIVER-002",
+      "name": "Riverfront Fit-Out",
+      "clientName": "Harbor Retail",
+      "location": "Mumbai",
+      "contractValue": 820000,
+      "status": "at_risk",
+      "projectManagerId": "user-pm-001"
+    }
+  ],
+  "phases": [
+    {
+      "id": "phase-north-yard-01",
+      "projectId": "project-north-yard",
+      "name": "Civil Works",
+      "sequence": 1,
+      "status": "active"
+    },
+    {
+      "id": "phase-north-yard-02",
+      "projectId": "project-north-yard",
+      "name": "Envelope",
+      "sequence": 2,
+      "status": "not_started"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "assignment-north-yard-pm",
+      "projectId": "project-north-yard",
+      "phaseId": null,
+      "userId": "user-pm-001",
+      "assignedRole": "project_manager"
+    },
+    {
+      "id": "assignment-north-yard-supervisor",
+      "projectId": "project-north-yard",
+      "phaseId": "phase-north-yard-01",
+      "userId": "user-supervisor-001",
+      "assignedRole": "site_supervisor"
+    },
+    {
+      "id": "assignment-north-yard-client",
+      "projectId": "project-north-yard",
+      "phaseId": null,
+      "userId": "user-client-001",
+      "assignedRole": "client"
+    }
+  ],
+  "dailyLogs": [
+    {
+      "id": "daily-log-north-yard-2026-06-12",
+      "projectId": "project-north-yard",
+      "phaseId": "phase-north-yard-01",
+      "supervisorId": "user-supervisor-001",
+      "logDate": "2026-06-12",
+      "workforceCount": 18,
+      "status": "submitted"
+    }
+  ],
+  "punchItems": [
+    {
+      "id": "punch-north-yard-handrail",
+      "projectId": "project-north-yard",
+      "phaseId": "phase-north-yard-01",
+      "title": "Missing handrail at dock stair",
+      "severity": "high",
+      "status": "ready_for_review",
+      "assigneeId": "user-supervisor-001"
+    }
+  ],
+  "changeOrders": [
+    {
+      "id": "change-order-drainage",
+      "projectId": "project-north-yard",
+      "phaseId": "phase-north-yard-01",
+      "title": "Additional drainage trench",
+      "status": "approved",
+      "requestedAmount": 25000,
+      "approvedAmount": 22000,
+      "requestedDays": 4,
+      "approvedDays": 3
+    }
+  ]
+}
