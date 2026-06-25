@@ -51,6 +51,8 @@ const env = envSchema.parse({
 const app = express();
 const arcjet = getArcjetConfig();
 
+app.set("trust proxy", 1);
+
 Sentry.init({
   environment: env.NODE_ENV,
   tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0),

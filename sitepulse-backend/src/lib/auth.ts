@@ -41,6 +41,6 @@ export const auth = betterAuth({
   cookie: {
     // Better Auth will honor these where applicable; ensure cookies are secure in production
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   },
 });
