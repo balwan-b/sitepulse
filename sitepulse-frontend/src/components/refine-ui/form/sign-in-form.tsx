@@ -26,6 +26,7 @@ export const SignInForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const Link = useLink();
 
@@ -35,6 +36,11 @@ export const SignInForm = () => {
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
     setError("");
 
     if (!email.trim() || !password) {
@@ -42,9 +48,26 @@ export const SignInForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     login({
       email,
       password,
+    }, {
+      onError: (loginError) => {
+        setError(
+          loginError instanceof Error
+            ? loginError.message
+            : "Unable to sign in right now.",
+        );
+        setIsSubmitting(false);
+      },
+      onSuccess: (result) => {
+        if (result?.success === false) {
+          setError(result.error?.message ?? "Unable to sign in right now.");
+          setIsSubmitting(false);
+        }
+      },
     });
   };
 
@@ -102,6 +125,7 @@ export const SignInForm = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
             <div
@@ -113,6 +137,7 @@ export const SignInForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -135,6 +160,7 @@ export const SignInForm = () => {
                   onCheckedChange={(checked) =>
                     setRememberMe(checked === "indeterminate" ? false : checked)
                   }
+                  disabled={isSubmitting}
                 />
                 <Label htmlFor="remember">Remember me</Label>
               </div>
@@ -155,8 +181,13 @@ export const SignInForm = () => {
               </Link>
             </div>
 
-            <Button type="submit" size="lg" className={cn("w-full", "mt-6")}>
-              Sign in
+            <Button
+              type="submit"
+              size="lg"
+              className={cn("w-full", "mt-6")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </CardContent>

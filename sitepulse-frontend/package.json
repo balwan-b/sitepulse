@@ -79,6 +79,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "tsx": "^4.20.6",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
     "typescript": "^5.8.3",
@@ -92,7 +93,7 @@
     "start": "vite preview --host 0.0.0.0",
     "lint": "eslint src",
     "refine": "refine",
-    "test": "node --import ../sitepulse-backend/node_modules/tsx/dist/loader.mjs --test src/**/*.test.ts",
+    "test": "node --import tsx --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "browserslist": {

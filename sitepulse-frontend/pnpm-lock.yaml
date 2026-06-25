@@ -228,6 +228,9 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.5.0
+      tsx:
+        specifier: ^4.20.6
+        version: 4.20.6
       tailwindcss:
         specifier: ^4.1.4
         version: 4.3.0

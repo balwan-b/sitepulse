@@ -81,7 +81,13 @@ Production URLs should point at the Railway domains for the other service. For e
 
 - `BETTER_AUTH_URL` should be the backend URL
 - `FRONTEND_URL` should be the frontend URL
-- `VITE_BACKEND_BASE_URL` should be the backend URL
+- `VITE_BACKEND_BASE_URL` should be the backend URL inside the frontend container proxy
+
+Auth deployment note:
+
+- The frontend production container now reverse-proxies `/api` to the backend so the browser stays on one origin for auth.
+- Leave `PUBLIC_API_BASE_URL` unset in Railway production so the app uses same-origin `/api/...` requests.
+- Keep `VITE_BACKEND_BASE_URL` pointed at the backend service URL so the frontend container knows where to proxy.
 
 If you use a Railway PostgreSQL database, wire its connection string into `DATABASE_URL` before first deploy.
 
@@ -122,6 +128,11 @@ Frontend tests also use Node’s built-in test runner with `tsx` for pure-module
 - `pnpm --dir sitepulse-frontend lint`
 - `pnpm --dir sitepulse-frontend typecheck`
 - `pnpm --dir sitepulse-frontend build`
+
+GitHub Actions CI:
+
+- The workflow runs backend and frontend jobs independently with Node 24 and pnpm 10.
+- Frontend tests now use the frontend package’s own `tsx` dependency so CI no longer depends on the backend install layout.
 
 These cover:
 

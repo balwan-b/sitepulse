@@ -9,6 +9,7 @@ type InputPasswordProps = React.ComponentProps<"input">;
 
 export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const isDisabled = Boolean(props.disabled);
 
   return (
     <div className={cn("relative")}>
@@ -21,9 +22,11 @@ export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
         type="button"
         aria-label={showPassword ? "Hide password" : "Show password"}
         title={showPassword ? "Hide password" : "Show password"}
+        disabled={isDisabled}
         className={cn(
           "appearance-none",
-          "absolute right-3 top-1/2 -translate-y-1/2"
+          "absolute right-3 top-1/2 -translate-y-1/2",
+          isDisabled && "cursor-not-allowed opacity-50"
         )}
         onClick={() => setShowPassword((visible) => !visible)}
       >
