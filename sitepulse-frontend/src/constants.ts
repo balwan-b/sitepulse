@@ -12,12 +12,24 @@ export const USER_ROLES = {
   CLIENT: "client",
 } as const;
 
-const getEnvVar = (key: string, fallback?: string): string => {
+declare global {
+  interface Window {
+    __SITEPULSE_CONFIG__?: {
+      backendBaseUrl?: string;
+    };
+  }
+}
+
+const getEnvVar = (
+  key: string,
+  fallback?: string,
+  override?: string,
+): string => {
   const env =
     (import.meta as ImportMeta & {
       env?: Record<string, string | undefined>;
     }).env ?? {};
-  const value = env[key] ?? fallback;
+  const value = override ?? env[key] ?? fallback;
 
   if (!value) {
     throw new Error(`Missing environment variable: ${key}`);
@@ -26,9 +38,15 @@ const getEnvVar = (key: string, fallback?: string): string => {
   return value;
 };
 
+const runtimeBackendBaseUrl =
+  typeof window !== "undefined"
+    ? window.__SITEPULSE_CONFIG__?.backendBaseUrl?.trim()
+    : undefined;
+
 export const BACKEND_BASE_URL = getEnvVar(
   "VITE_BACKEND_BASE_URL",
   "http://localhost:4000",
+  runtimeBackendBaseUrl,
 ).replace(/\/+$/, "").replace(/\/api$/, "");
 export const API_URL = `${BACKEND_BASE_URL}/api`;
 export const AUTH_API_URL = `${API_URL}/auth`;
