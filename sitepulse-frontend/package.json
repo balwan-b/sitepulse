@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.12.5",
   "dependencies": {
     "@refinedev/cli": "^2.16.48",
     "@refinedev/core": "^5.0.8",

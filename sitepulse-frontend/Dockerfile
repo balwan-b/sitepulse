@@ -5,11 +5,13 @@ RUN corepack enable
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN corepack prepare pnpm@10 --activate
+ENV CI=true
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV CI=true
 RUN pnpm build
 
 FROM node:20-alpine AS runner
