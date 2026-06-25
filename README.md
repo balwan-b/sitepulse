@@ -131,8 +131,10 @@ Frontend tests also use Node’s built-in test runner with `tsx` for pure-module
 
 GitHub Actions CI:
 
-- The workflow runs backend and frontend jobs independently with Node 24 and pnpm 10.
-- Frontend tests now use the frontend package’s own `tsx` dependency so CI no longer depends on the backend install layout.
+- The workflow runs backend app checks with Node 24 and a real PostgreSQL service because backend tests require a live database.
+- The workflow runs frontend app checks with Node 20 to match the production frontend container baseline more closely.
+- CI also builds both Docker images directly, which mirrors the Railway deployment path for this repo.
+- Frontend tests use the frontend package’s own `tsx` dependency so CI no longer depends on the backend install layout.
 
 These cover:
 

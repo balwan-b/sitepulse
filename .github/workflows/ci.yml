@@ -7,8 +7,22 @@ on:
     branches: [main, master]
 
 jobs:
-  backend:
+  backend-checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sitepulse
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d sitepulse"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     defaults:
       run:
         working-directory: sitepulse-backend
@@ -19,11 +33,16 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: sitepulse-backend/pnpm-lock.yaml
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Wait for Postgres
+        run: |
+          until (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1; do
+            sleep 1
+          done
       - name: Typecheck
         run: pnpm typecheck
       - name: Run tests
@@ -31,7 +50,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-  frontend:
+  frontend-checks:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,10 +59,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: pnpm
           cache-dependency-path: sitepulse-frontend/pnpm-lock.yaml
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
       - name: Install dependencies
@@ -56,3 +75,17 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+
+  backend-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t sitepulse-backend-ci ./sitepulse-backend
+
+  frontend-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontend image
+        run: docker build -t sitepulse-frontend-ci ./sitepulse-frontend
