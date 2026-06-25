@@ -17,7 +17,7 @@ test("preserves explicit cookie attributes from upstream auth handler", () => {
     true,
   );
 
-  assert.equal(cookie, "session=abc123; Path=/; Secure; SameSite=Lax; HttpOnly");
+  assert.equal(cookie, "session=abc123; Path=/; Secure; SameSite=None; HttpOnly");
 });
 
 test("does not add cross-site flags outside production", () => {

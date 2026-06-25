@@ -1,6 +1,12 @@
 const hasCookieAttribute = (cookie: string, attribute: string) =>
   cookie.toLowerCase().includes(attribute.toLowerCase());
 
+const replaceCookieAttribute = (
+  cookie: string,
+  attributePattern: RegExp,
+  replacement: string,
+) => cookie.replace(attributePattern, replacement);
+
 export const ensureAuthCookieFlags = (
   cookie: string,
   isProduction: boolean,
@@ -16,7 +22,13 @@ export const ensureAuthCookieFlags = (
       normalized += "; Secure";
     }
 
-    if (!hasCookieAttribute(normalized, "SameSite")) {
+    if (hasCookieAttribute(normalized, "SameSite")) {
+      normalized = replaceCookieAttribute(
+        normalized,
+        /;\s*SameSite=[^;]+/i,
+        "; SameSite=None",
+      );
+    } else {
       normalized += "; SameSite=None";
     }
   }
