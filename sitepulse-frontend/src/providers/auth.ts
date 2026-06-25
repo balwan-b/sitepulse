@@ -43,6 +43,23 @@ const syncSessionIdentity = async () => {
   return data;
 };
 
+const ensureVerifiedSession = async () => {
+  const user = await syncSessionIdentity();
+
+  if (!user) {
+    return {
+      ok: false as const,
+      message:
+        "Sign-in succeeded, but the browser did not keep a usable SitePulse session. This usually means the auth cookie was blocked or the frontend/backend origins do not match the live setup.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    user,
+  };
+};
+
 const shouldResyncSession = () => {
   const syncedAt = Number(localStorage.getItem(USER_SYNCED_AT_KEY) ?? 0);
   if (!syncedAt) return true;
@@ -87,7 +104,17 @@ export const authProvider: AuthProvider = {
       };
     }
 
-    saveUser(data);
+    const verifiedSession = await ensureVerifiedSession();
+
+    if (!verifiedSession.ok) {
+      return {
+        success: false,
+        error: {
+          name: "Session verification failed",
+          message: verifiedSession.message,
+        },
+      };
+    }
 
     return {
       success: true,
@@ -107,7 +134,17 @@ export const authProvider: AuthProvider = {
       };
     }
 
-    saveUser(data);
+    const verifiedSession = await ensureVerifiedSession();
+
+    if (!verifiedSession.ok) {
+      return {
+        success: false,
+        error: {
+          name: "Session verification failed",
+          message: verifiedSession.message,
+        },
+      };
+    }
 
     return {
       success: true,
@@ -132,7 +169,7 @@ export const authProvider: AuthProvider = {
     return { error };
   },
   check: async () => {
-    const user = await getFreshIdentity();
+    const user = await syncSessionIdentity();
 
     if (user) {
       return { authenticated: true };
@@ -148,7 +185,15 @@ export const authProvider: AuthProvider = {
       },
     };
   },
-  getIdentity: async () => getFreshIdentity(),
+  getIdentity: async () => {
+    const stored = getStoredUser();
+
+    if (stored && !shouldResyncSession()) {
+      return stored;
+    }
+
+    return syncSessionIdentity();
+  },
   getPermissions: async () => {
     const user = await getFreshIdentity();
     return user ? { role: user.role } : null;
