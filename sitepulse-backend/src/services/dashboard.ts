@@ -1,62 +1,93 @@
 import { and, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { db } from "../db/index.js";
 import {
   changeOrders,
-  const result = {
-    role: actor.role,
-    generatedAt: new Date().toISOString(),
-    stats: {
-      totalVisibleProjects,
-      activeProjects,
-      atRiskProjects,
-      openPunchItems,
-      overduePunchItems,
-      submittedDailyLogs,
-      draftDailyLogs,
-      pendingChangeOrders,
-      approvedChangeOrders,
-      totalPhases,
-      totalAssignments,
-    },
-    alerts,
-    spotlightProjects: projectRows.map((project) => ({
-      ...project,
-      openPunchItems: punchCountMap.get(project.id) ?? 0,
-      submittedChangeOrders: changeOrderCountMap.get(project.id)?.submitted ?? 0,
-      approvedChangeOrders: changeOrderCountMap.get(project.id)?.approved ?? 0,
-      phaseCount: phaseCountMap.get(project.id) ?? 0,
-    })),
-    recentEvents: recentEventRows.map((event) => ({
-      id: event.id,
-      projectId: event.projectId,
-      projectCode: event.projectCode,
-      projectName: event.projectName,
-      entityType: event.entityType,
-      entityId: event.entityId,
-      eventType: event.eventType,
-      summary: event.summary,
-      createdAt: toIsoString(event.createdAt),
-      createdBy: actor.role === "client" ? null : event.createdBy,
-      createdByName: actor.role === "client" ? null : (event.createdByName ?? null),
-    })),
-  };
+  crewAssignments,
+  dailyLogs,
+  projectEvents,
+  projectPhases,
+  projects,
+  punchItems,
+  user,
+} from "../db/schema/index.js";
+import type { AuthenticatedActor } from "../lib/authorization.js";
+import { listReadableProjectIds } from "./project-scope.js";
+import { toIsoString } from "./shared.js";
 
-  try {
-    dashboardCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value: result });
-  } catch (e) {
-    // noop - caching failure shouldn't break the endpoint
+const CLIENT_VISIBLE_EVENT_TYPES = [
+  "project_created",
+  "project_status_changed",
+  "phase_status_changed",
+  "daily_log_submitted",
+  "punch_item_status_changed",
+  "change_order_approved",
+  "change_order_rejected",
+] as const;
+
+const ACTIVE_PUNCH_STATUSES = ["open", "in_progress", "ready_for_review"] as const;
+const OPEN_CHANGE_ORDER_STATUSES = ["submitted"] as const;
+const APPROVED_CHANGE_ORDER_STATUSES = ["approved"] as const;
+const DRAFT_DAILY_LOG_STATUSES = ["draft"] as const;
+const SUBMITTED_DAILY_LOG_STATUSES = ["submitted"] as const;
+
+const countRows = async (builder: () => any, where?: any) => {
+  let query = builder();
+
+  if (where) {
+    query = query.where(where);
   }
 
-  return result;
+  const rows = await query;
+  return rows[0]?.total ?? 0;
 };
-  const punchScope = scopeCondition(readableProjectIds, punchItems.projectId);
-  const changeOrderScope = scopeCondition(readableProjectIds, changeOrders.projectId);
-  const dailyLogScope = scopeCondition(readableProjectIds, dailyLogs.projectId);
-  const eventScope = scopeCondition(readableProjectIds, projectEvents.projectId);
-  const phaseScope = scopeCondition(readableProjectIds, projectPhases.projectId);
-  const assignmentScope = scopeCondition(readableProjectIds, crewAssignments.projectId);
+
+const combineWhere = (...conditions: Array<any>) => {
+  const filters = conditions.filter(Boolean);
+  if (filters.length === 0) {
+    return undefined;
+  }
+
+  return and(...filters);
+};
+
+export const getDashboardSnapshot = async (actor: AuthenticatedActor) => {
+  const readableProjectIds = await listReadableProjectIds(actor);
+  const projectScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(projects.id, readableProjectIds)
+      : eq(projects.id, "__no_access__")
+    : undefined;
+  const punchScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(punchItems.projectId, readableProjectIds)
+      : eq(punchItems.projectId, "__no_access__")
+    : undefined;
+  const changeOrderScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(changeOrders.projectId, readableProjectIds)
+      : eq(changeOrders.projectId, "__no_access__")
+    : undefined;
+  const dailyLogScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(dailyLogs.projectId, readableProjectIds)
+      : eq(dailyLogs.projectId, "__no_access__")
+    : undefined;
+  const eventScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(projectEvents.projectId, readableProjectIds)
+      : eq(projectEvents.projectId, "__no_access__")
+    : undefined;
+  const phaseScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(projectPhases.projectId, readableProjectIds)
+      : eq(projectPhases.projectId, "__no_access__")
+    : undefined;
+  const assignmentScope = readableProjectIds
+    ? readableProjectIds.length > 0
+      ? inArray(crewAssignments.projectId, readableProjectIds)
+      : eq(crewAssignments.projectId, "__no_access__")
+    : undefined;
 
   const [
     totalVisibleProjects,
@@ -73,72 +104,57 @@ import {
     projectRows,
     recentEventRows,
   ] = await Promise.all([
-    db
-      .select({ total: count() })
-      .from(projects)
-      .where(projectScope)
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(projects)
-      .where(and(projectScope, eq(projects.status, "active")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(projects)
-      .where(and(projectScope, eq(projects.status, "at_risk")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(punchItems)
-      .where(
-        and(
-          punchScope,
-          inArray(punchItems.status, ["open", "in_progress", "ready_for_review"]),
-        ),
-      )
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(punchItems)
-      .where(
-        and(
-          punchScope,
-          inArray(punchItems.status, ["open", "in_progress", "ready_for_review"]),
-          lt(punchItems.dueDate, new Date()),
-        ),
-      )
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(dailyLogs)
-      .where(and(dailyLogScope, eq(dailyLogs.status, "submitted")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(dailyLogs)
-      .where(and(dailyLogScope, eq(dailyLogs.status, "draft")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(changeOrders)
-      .where(and(changeOrderScope, eq(changeOrders.status, "submitted")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(changeOrders)
-      .where(and(changeOrderScope, eq(changeOrders.status, "approved")))
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(projectPhases)
-      .where(phaseScope)
-      .then((rows) => rows[0]?.total ?? 0),
-    db
-      .select({ total: count() })
-      .from(crewAssignments)
-      .where(assignmentScope)
-      .then((rows) => rows[0]?.total ?? 0),
+    countRows(
+      () => db.select({ total: count() }).from(projects),
+      projectScope,
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(projects),
+      combineWhere(projectScope, eq(projects.status, "active")),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(projects),
+      combineWhere(projectScope, eq(projects.status, "at_risk")),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(punchItems),
+      combineWhere(punchScope, inArray(punchItems.status, ACTIVE_PUNCH_STATUSES)),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(punchItems),
+      combineWhere(
+        punchScope,
+        inArray(punchItems.status, ACTIVE_PUNCH_STATUSES),
+        lt(punchItems.dueDate, new Date()),
+      ),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(dailyLogs),
+      combineWhere(dailyLogScope, inArray(dailyLogs.status, SUBMITTED_DAILY_LOG_STATUSES)),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(dailyLogs),
+      combineWhere(dailyLogScope, inArray(dailyLogs.status, DRAFT_DAILY_LOG_STATUSES)),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(changeOrders),
+      combineWhere(changeOrderScope, inArray(changeOrders.status, OPEN_CHANGE_ORDER_STATUSES)),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(changeOrders),
+      combineWhere(
+        changeOrderScope,
+        inArray(changeOrders.status, APPROVED_CHANGE_ORDER_STATUSES),
+      ),
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(projectPhases),
+      phaseScope,
+    ),
+    countRows(
+      () => db.select({ total: count() }).from(crewAssignments),
+      assignmentScope,
+    ),
     db
       .select({
         id: projects.id,
@@ -172,7 +188,7 @@ import {
       .innerJoin(projects, eq(projectEvents.projectId, projects.id))
       .leftJoin(user, eq(projectEvents.createdBy, user.id))
       .where(
-        and(
+        combineWhere(
           eventScope,
           actor.role === "client"
             ? inArray(projectEvents.eventType, [...CLIENT_VISIBLE_EVENT_TYPES])
@@ -196,7 +212,7 @@ import {
           .where(
             and(
               inArray(punchItems.projectId, projectIds),
-              inArray(punchItems.status, ["open", "in_progress", "ready_for_review"]),
+              inArray(punchItems.status, ACTIVE_PUNCH_STATUSES),
             ),
           )
           .groupBy(punchItems.projectId)
@@ -236,14 +252,16 @@ import {
   );
   const phaseCountMap = new Map(phaseCounts.map((row) => [row.projectId, row.total]));
 
+  const managerlessProjects = projectRows.filter((project) => !project.projectManagerName).length;
+
   const alerts =
     actor.role === "admin"
       ? [
           atRiskProjects > 0
             ? `${atRiskProjects} visible project${atRiskProjects === 1 ? "" : "s"} need recovery attention.`
             : "No visible projects are flagged at risk right now.",
-          projectRows.filter((project) => !project.projectManagerName).length > 0
-            ? `${projectRows.filter((project) => !project.projectManagerName).length} recent project${projectRows.filter((project) => !project.projectManagerName).length === 1 ? "" : "s"} still need a manager assigned.`
+          managerlessProjects > 0
+            ? `${managerlessProjects} recent project${managerlessProjects === 1 ? "" : "s"} still need a manager assigned.`
             : "Recent projects all have manager ownership assigned.",
         ]
       : actor.role === "project_manager"
@@ -311,7 +329,4 @@ import {
       createdByName: actor.role === "client" ? null : (event.createdByName ?? null),
     })),
   };
-};
-
-// Note: stored at the end of the function, but we cannot reference result after return.
 };
