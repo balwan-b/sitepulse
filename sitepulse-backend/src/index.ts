@@ -14,6 +14,7 @@ import { z } from "zod";
 import { getArcjetConfig } from "./config/arcjet.js";
 import { auditError } from "./lib/audit.js";
 import { auth } from "./lib/auth.js";
+import { ensureAuthCookieFlags } from "./lib/auth-cookies.js";
 import { buildDataResponse } from "./lib/api-response.js";
 import { AppError, buildClientErrorResponse } from "./lib/http.js";
 import {
@@ -79,7 +80,7 @@ app.use(
   }),
 );
 
-// Ensure auth cookies set by upstream handlers include secure flags in prod
+// Keep fallback cookie hardening aligned with Better Auth's production settings.
 app.use((req, res, next) => {
   const origSetHeader = res.setHeader.bind(res) as any;
   res.setHeader = function (
@@ -89,20 +90,9 @@ app.use((req, res, next) => {
     try {
       if (String(name).toLowerCase() === "set-cookie" && value) {
         const cookies = Array.isArray(value) ? value.slice() : [value];
-        const flags =
-          env.NODE_ENV === "production"
-            ? "; Secure; SameSite=Strict; HttpOnly"
-            : "; HttpOnly";
-        const modified = cookies.map((c) => {
-          const lc = c.toLowerCase();
-          if (
-            lc.includes("samesite") ||
-            lc.includes("secure") ||
-            lc.includes("httponly")
-          )
-            return c;
-          return c + flags;
-        });
+        const modified = cookies.map((cookie) =>
+          ensureAuthCookieFlags(cookie, env.NODE_ENV === "production"),
+        );
         return origSetHeader(
           "Set-Cookie",
           modified,
