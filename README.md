@@ -2,6 +2,10 @@
 
 SitePulse is a portfolio SaaS MVP for construction field operations. It demonstrates how a role-aware internal operations tool can coordinate project setup, field reporting, punch resolution, and commercial change-order review without exposing internal staff workflows to clients.
 
+[![CI](https://github.com/balwan-b/sitepulse/actions/workflows/ci.yml/badge.svg)](https://github.com/balwan-b/sitepulse/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-blue)](https://www.typescriptlang.org/)
+[![Railway](https://img.shields.io/badge/Deploy-Railway-black)](https://railway.app/)
+
 ## Product Summary
 
 SitePulse is designed around four roles:
@@ -27,6 +31,16 @@ The repository is split into two applications:
 
 - `sitepulse-backend`: Express API, Better Auth, Drizzle ORM, PostgreSQL
 - `sitepulse-frontend`: React 19 + Refine + Tailwind UI shell
+
+Small request flow:
+
+```mermaid
+graph TD
+  Browser[Browser] --> Frontend[Railway frontend container]
+  Frontend -->|same-origin /api proxy| Backend[Railway backend container]
+  Backend --> DB[(PostgreSQL / Neon)]
+  Backend --> Auth[Better Auth session + RBAC]
+```
 
 High-level request flow:
 
@@ -88,6 +102,7 @@ Auth deployment note:
 - The frontend production container now reverse-proxies `/api` to the backend so the browser stays on one origin for auth.
 - Leave `PUBLIC_API_BASE_URL` unset in Railway production so the app uses same-origin `/api/...` requests.
 - Keep `VITE_BACKEND_BASE_URL` pointed at the backend service URL so the frontend container knows where to proxy.
+- Backend CORS is locked to the exact `FRONTEND_URL` and allows credentials, which is required for Better Auth session cookies and dashboard requests to work together.
 
 If you use a Railway PostgreSQL database, wire its connection string into `DATABASE_URL` before first deploy.
 
@@ -104,7 +119,13 @@ Recommended setup:
 2. Run `node demo/reset-and-seed-neon.mjs` from `sitepulse-backend` against the target database.
 3. Sign in under each role and confirm the seeded project, punch item, daily log, and approved change order appear in the expected views.
 
-This script recreates the schema, reapplies the Drizzle migrations, seeds Better Auth credential users, and loads the deterministic domain fixture.
+What the seed script does:
+
+- recreates the schema on the target database
+- reapplies the Drizzle migrations
+- hashes Better Auth credential passwords before inserting auth rows
+- loads the deterministic domain fixture from `demo-seed.json`
+- loads the supporting SQL from `domain-seed.sql`
 
 ## Demo Walkthrough
 
