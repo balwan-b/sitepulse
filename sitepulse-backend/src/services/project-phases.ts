@@ -12,7 +12,7 @@ import {
   sanitizeText,
 } from "../lib/validation.js";
 import { assertProjectManageable, assertProjectReadable, listReadableProjectIds } from "./project-scope.js";
-import { parsePagination, assertRecord, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const phasePayload = (payload: Record<string, unknown>) => ({
   projectId: sanitizeText(payload.projectId, {
@@ -66,6 +66,7 @@ export const listProjectPhases = async (
 ) => {
   const { page, limit, offset } = parsePagination(query);
   const readableIds = await listReadableProjectIds(actor);
+  const requestedIds = parseIdList(query);
 
   const projectId =
     typeof query.projectId === "string" && query.projectId ? query.projectId : null;
@@ -81,12 +82,15 @@ export const listProjectPhases = async (
         ? inArray(projectPhases.projectId, readableIds)
         : eq(projectPhases.projectId, "__no_access__");
 
-  const where =
-    projectId && scopeWhere
-      ? and(scopeWhere, eq(projectPhases.projectId, projectId))
-      : projectId
-        ? eq(projectPhases.projectId, projectId)
-        : scopeWhere;
+  const requestedWhere =
+    requestedIds == null
+      ? undefined
+      : requestedIds.length > 0
+        ? inArray(projectPhases.id, requestedIds)
+        : eq(projectPhases.id, "__no_access__");
+
+  const whereFilters = [scopeWhere, requestedWhere, projectId ? eq(projectPhases.projectId, projectId) : undefined].filter(Boolean);
+  const where = whereFilters.length ? and(...whereFilters) : undefined;
 
   const [rows, total] = await Promise.all([
     db

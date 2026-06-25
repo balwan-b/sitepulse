@@ -1,9 +1,10 @@
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 WORKDIR /app
 RUN corepack enable
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
+RUN apk add --no-cache git python3 make g++
 RUN corepack prepare pnpm@10 --activate
 RUN pnpm install --frozen-lockfile
 
@@ -12,10 +13,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN npm install -g serve
+RUN corepack enable
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-EXPOSE 3000
-CMD ["sh", "-c", "serve -s dist -l ${PORT:-3000}"]
+COPY package.json ./
+EXPOSE 4000
+CMD ["node", "dist/index.js"]

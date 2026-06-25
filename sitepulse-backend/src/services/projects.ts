@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { projects, user } from "../db/schema/index.js";
@@ -15,7 +15,7 @@ import {
   validateIdentifier,
 } from "../lib/validation.js";
 import { assertProjectManageable, assertProjectReadable, listReadableProjectIds } from "./project-scope.js";
-import { assertRecord, parsePagination, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const projectPayload = (payload: Record<string, unknown>) => {
   const startDate = parseIsoDate(payload.startDate, "startDate");
@@ -119,12 +119,21 @@ export const listProjects = async (
 ) => {
   const { page, limit, offset } = parsePagination(query);
   const readableIds = await listReadableProjectIds(actor);
+  const requestedIds = parseIdList(query);
   const where =
-    readableIds == null
-      ? undefined
-      : readableIds.length > 0
-        ? inArray(projects.id, readableIds)
-        : eq(projects.id, "__no_access__");
+    [
+      readableIds == null
+        ? undefined
+        : readableIds.length > 0
+          ? inArray(projects.id, readableIds)
+          : eq(projects.id, "__no_access__"),
+      requestedIds == null
+        ? undefined
+        : requestedIds.length > 0
+          ? inArray(projects.id, requestedIds)
+          : eq(projects.id, "__no_access__"),
+    ].filter(Boolean);
+  const queryWhere = where.length ? and(...where) : undefined;
 
   const [rows, totalRows] = await Promise.all([
     db
@@ -146,14 +155,14 @@ export const listProjects = async (
       })
       .from(projects)
       .leftJoin(user, eq(projects.projectManagerId, user.id))
-      .where(where)
+      .where(queryWhere)
       .orderBy(desc(projects.createdAt))
       .limit(limit)
       .offset(offset),
     db
       .select({ total: count() })
       .from(projects)
-      .where(where)
+      .where(queryWhere)
       .then((records) => records[0]?.total ?? 0),
   ]);
 

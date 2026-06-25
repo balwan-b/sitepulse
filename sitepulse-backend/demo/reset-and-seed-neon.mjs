@@ -43,13 +43,23 @@ const run = async () => {
   await client.connect();
 
   try {
+    // Guard: require explicit ALLOW_DESTRUCTIVE_SEED to run destructive demo reset
+    if (!process.env.ALLOW_DESTRUCTIVE_SEED) {
+      throw new Error(
+        "Destructive seed disabled. Set ALLOW_DESTRUCTIVE_SEED=1 to enable.",
+      );
+    }
+
     await client.query("begin");
     await client.query("drop schema if exists public cascade");
     await client.query("create schema public");
     await client.query("grant all on schema public to public");
 
     for (const migrationFile of migrations) {
-      const sql = await readFile(resolve(projectRoot, "drizzle", migrationFile), "utf8");
+      const sql = await readFile(
+        resolve(projectRoot, "drizzle", migrationFile),
+        "utf8",
+      );
 
       for (const statement of parseMigrationStatements(sql)) {
         await client.query(statement);
@@ -79,20 +89,15 @@ const run = async () => {
           insert into account (id, account_id, provider_id, user_id, password)
           values ($1, $2, 'credential', $3, $4)
         `,
-        [
-          `account-${account.id}`,
-          account.id,
-          account.id,
-          passwordHash,
-        ],
+        [`account-${account.id}`, account.id, account.id, passwordHash],
       );
     }
 
     await client.query(domainSeedSql);
     await client.query("commit");
 
-    console.log("Neon reset and seed completed successfully.");
-    console.log(
+    console.info("Neon reset and seed completed successfully.");
+    console.info(
       `Seeded ${seed.accounts.length} auth accounts and domain data for ${seed.projects.length} projects.`,
     );
   } catch (error) {

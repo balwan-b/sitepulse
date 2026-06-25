@@ -24,8 +24,14 @@
     "drizzle-orm": "^0.45.2",
     "express": "^4.22.2",
     "pg": "^8.21.0",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "helmet": "^6.0.0",
+    "express-rate-limit": "^6.8.0",
+    "pino": "^8.0.0",
+    "@sentry/node": "^7.0.0",
+    "prom-client": "^14.0.0"
   },
+  "optionalDependencies": {},
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

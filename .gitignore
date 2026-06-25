@@ -1,0 +1,13 @@
+node_modules/
+**/.env
+**/.env.local
+sitepulse-backend/.env.local
+dist/
+coverage/
+.cache/
+.DS_Store
+.vscode/
+
+docs/
+PLAN.md
+PLAN-old.md

@@ -12,7 +12,7 @@ import {
   sanitizeText,
 } from "../lib/validation.js";
 import { assertProjectManageable, assertProjectReadable, listReadableProjectIds } from "./project-scope.js";
-import { assertRecord, parsePagination, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const assignmentPayload = (payload: Record<string, unknown>) => {
   const startDate = parseIsoDate(payload.startDate, "startDate");
@@ -186,6 +186,7 @@ export const listCrewAssignments = async (
 ) => {
   const { page, limit, offset } = parsePagination(query);
   const readableIds = await listReadableProjectIds(actor);
+  const requestedIds = parseIdList(query);
   const projectId =
     typeof query.projectId === "string" && query.projectId ? query.projectId : null;
 
@@ -200,12 +201,15 @@ export const listCrewAssignments = async (
         ? inArray(crewAssignments.projectId, readableIds)
         : eq(crewAssignments.projectId, "__no_access__");
 
-  const where =
-    projectId && scopeWhere
-      ? and(scopeWhere, eq(crewAssignments.projectId, projectId))
-      : projectId
-        ? eq(crewAssignments.projectId, projectId)
-        : scopeWhere;
+  const requestedWhere =
+    requestedIds == null
+      ? undefined
+      : requestedIds.length > 0
+        ? inArray(crewAssignments.id, requestedIds)
+        : eq(crewAssignments.id, "__no_access__");
+
+  const whereFilters = [scopeWhere, requestedWhere, projectId ? eq(crewAssignments.projectId, projectId) : undefined].filter(Boolean);
+  const where = whereFilters.length ? and(...whereFilters) : undefined;
 
   const [rows, total] = await Promise.all([
     db

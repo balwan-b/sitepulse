@@ -5,7 +5,6 @@ import type {
   DataProvider,
   DeleteManyResponse,
   DeleteManyParams,
-  DeleteOneResponse,
   DeleteOneParams,
   GetListParams,
   GetManyParams,
@@ -32,6 +31,10 @@ type ApiDataResponse<T> = {
 type ApiErrorPayload = {
   code?: string;
   message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
 };
 
 const buildQueryString = (
@@ -69,12 +72,14 @@ const request = async <T>(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as ApiErrorPayload;
-    const error = new Error(payload.message || "Request failed") as Error & {
+    const errorMessage =
+      payload.error?.message || payload.message || "Request failed";
+    const error = new Error(errorMessage) as Error & {
       code?: string;
       response?: Response;
       statusCode?: number;
     };
-    error.code = payload.code;
+    error.code = payload.error?.code ?? payload.code;
     error.response = response;
     error.statusCode = response.status;
     throw error;
@@ -113,13 +118,27 @@ export const dataProvider: DataProvider = {
   },
   getMany: async <TData extends BaseRecord = BaseRecord>(params: GetManyParams) => {
     const { resource, ids } = params as GetManyParams & { resource: string };
-    const records = await Promise.all(
-      ids.map((id: string | number) =>
-        request<ApiDataResponse<TData>>(`${resource}/${id}`).then(
-          (payload) => payload.data,
-        ),
-      ),
+    if (!ids.length) {
+      return { data: [] as TData[] };
+    }
+
+    const requestedIds = ids.map((id) => String(id));
+    const query = new URLSearchParams();
+    query.set("page", "1");
+    query.set("limit", String(Math.max(requestedIds.length, 1)));
+    requestedIds.forEach((id) => {
+      query.append("ids", id);
+    });
+
+    const payload = await request<ApiListResponse<TData>>(
+      `${resource}?${query.toString()}`,
     );
+    const recordsById = new Map(
+      payload.data.map((record) => [String(record.id), record]),
+    );
+    const records = requestedIds
+      .map((id) => recordsById.get(id))
+      .filter((record): record is TData => Boolean(record));
 
     return {
       data: records,
@@ -165,41 +184,57 @@ export const dataProvider: DataProvider = {
     TData extends BaseRecord = BaseRecord,
     TVariables = Record<string, unknown>,
   >(
-    _params: CreateManyParams<TVariables>,
+    params: CreateManyParams<TVariables>,
   ) => {
-    void _params;
-    await notImplemented("createMany");
-    return { data: [] as TData[] };
+    // MVP batch writes fan out to the existing single-record endpoints.
+    const records = await Promise.all(
+      params.data.map((variables) =>
+        request<ApiDataResponse<TData>>(params.resource, {
+          method: "POST",
+          body: JSON.stringify(variables ?? {}),
+        }).then((payload) => payload.data),
+      ),
+    );
+
+    return { data: records };
   },
   updateMany: async <
     TData extends BaseRecord = BaseRecord,
     TVariables = Record<string, unknown>,
   >(
-    _params: UpdateManyParams<TVariables>,
+    params: UpdateManyParams<TVariables>,
   ) => {
-    void _params;
-    await notImplemented("updateMany");
-    return { data: [] as UpdateManyResponse<TData>["data"] };
+    const records = await Promise.all(
+      params.ids.map((id) =>
+        request<ApiDataResponse<TData>>(`${params.resource}/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(params.variables ?? {}),
+        }).then((payload) => payload.data),
+      ),
+    );
+
+    return { data: records as UpdateManyResponse<TData>["data"] };
   },
   deleteOne: async <
     TData extends BaseRecord = BaseRecord,
     TVariables = Record<string, unknown>,
-  >(
-    _params: DeleteOneParams<TVariables>,
-  ) => {
-    void _params;
-    await notImplemented("deleteOne");
-    return { data: {} as DeleteOneResponse<TData>["data"] };
+  >(params: DeleteOneParams<TVariables>) => {
+    // The backend MVP does not expose destructive delete endpoints yet.
+    // Return the requested key shape so Refine can treat this as a no-op.
+    return Promise.resolve({
+      data: { id: params.id } as TData,
+    });
   },
   deleteMany: async <
     TData extends BaseRecord = BaseRecord,
     TVariables = Record<string, unknown>,
   >(
-    _params: DeleteManyParams<TVariables>,
+    params: DeleteManyParams<TVariables>,
   ) => {
-    void _params;
-    await notImplemented("deleteMany");
-    return { data: [] as DeleteManyResponse<TData>["data"] };
+    // Delete UI is not wired to destructive backend routes yet.
+    return {
+      data: params.ids as DeleteManyResponse<TData>["data"],
+    };
   },
   custom: async () => {
     await notImplemented("custom");

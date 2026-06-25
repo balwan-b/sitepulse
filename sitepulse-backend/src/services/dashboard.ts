@@ -4,39 +4,53 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "../db/index.js";
 import {
   changeOrders,
-  crewAssignments,
-  dailyLogs,
-  projectEvents,
-  projectPhases,
-  projects,
-  punchItems,
-  user,
-} from "../db/schema/index.js";
-import type { AuthenticatedActor } from "../lib/authorization.js";
-import { listReadableProjectIds } from "./project-scope.js";
-import { toIsoString } from "./shared.js";
+  const result = {
+    role: actor.role,
+    generatedAt: new Date().toISOString(),
+    stats: {
+      totalVisibleProjects,
+      activeProjects,
+      atRiskProjects,
+      openPunchItems,
+      overduePunchItems,
+      submittedDailyLogs,
+      draftDailyLogs,
+      pendingChangeOrders,
+      approvedChangeOrders,
+      totalPhases,
+      totalAssignments,
+    },
+    alerts,
+    spotlightProjects: projectRows.map((project) => ({
+      ...project,
+      openPunchItems: punchCountMap.get(project.id) ?? 0,
+      submittedChangeOrders: changeOrderCountMap.get(project.id)?.submitted ?? 0,
+      approvedChangeOrders: changeOrderCountMap.get(project.id)?.approved ?? 0,
+      phaseCount: phaseCountMap.get(project.id) ?? 0,
+    })),
+    recentEvents: recentEventRows.map((event) => ({
+      id: event.id,
+      projectId: event.projectId,
+      projectCode: event.projectCode,
+      projectName: event.projectName,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      eventType: event.eventType,
+      summary: event.summary,
+      createdAt: toIsoString(event.createdAt),
+      createdBy: actor.role === "client" ? null : event.createdBy,
+      createdByName: actor.role === "client" ? null : (event.createdByName ?? null),
+    })),
+  };
 
-const CLIENT_VISIBLE_EVENT_TYPES = [
-  "project_status_changed",
-  "phase_status_changed",
-  "change_order_approved",
-] as const;
-
-const scopeCondition = (projectIds: string[] | null, column: AnyPgColumn) => {
-  if (projectIds == null) {
-    return undefined;
+  try {
+    dashboardCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value: result });
+  } catch (e) {
+    // noop - caching failure shouldn't break the endpoint
   }
 
-  if (projectIds.length === 0) {
-    return eq(column, "__no_access__");
-  }
-
-  return inArray(column, projectIds);
+  return result;
 };
-
-export const getDashboardSnapshot = async (actor: AuthenticatedActor) => {
-  const readableProjectIds = await listReadableProjectIds(actor);
-  const projectScope = scopeCondition(readableProjectIds, projects.id);
   const punchScope = scopeCondition(readableProjectIds, punchItems.projectId);
   const changeOrderScope = scopeCondition(readableProjectIds, changeOrders.projectId);
   const dailyLogScope = scopeCondition(readableProjectIds, dailyLogs.projectId);
@@ -297,4 +311,7 @@ export const getDashboardSnapshot = async (actor: AuthenticatedActor) => {
       createdByName: actor.role === "client" ? null : (event.createdByName ?? null),
     })),
   };
+};
+
+// Note: stored at the end of the function, but we cannot reference result after return.
 };

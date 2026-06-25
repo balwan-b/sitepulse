@@ -4,7 +4,7 @@ import { db } from "../db/index.js";
 import { crewAssignments, projects, user } from "../db/schema/index.js";
 import type { AuthenticatedActor } from "../lib/authorization.js";
 import { AppError } from "../lib/http.js";
-import { assertRecord, parsePagination, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const serializeUser = (record: typeof user.$inferSelect) => ({
   id: record.id,
@@ -32,11 +32,20 @@ export const listUsers = async (
 ) => {
   assertUserDirectoryAccess(actor);
   const { page, limit, offset } = parsePagination(query);
+  const requestedIds = parseIdList(query);
   const role =
     typeof query.role === "string" && query.role.length > 0 ? query.role : null;
 
   if (actor.role === "admin") {
-    const where = role ? eq(user.role, role as typeof user.$inferSelect.role) : undefined;
+    const filters = [
+      requestedIds == null
+        ? undefined
+        : requestedIds.length > 0
+          ? inArray(user.id, requestedIds)
+          : eq(user.id, "__no_access__"),
+      role ? eq(user.role, role as typeof user.$inferSelect.role) : undefined,
+    ].filter(Boolean);
+    const where = filters.length ? and(...filters) : undefined;
     const [rows, total] = await Promise.all([
       db
         .select()
@@ -87,11 +96,17 @@ export const listUsers = async (
     : [];
 
   const visibleIds = [...new Set([actor.id, ...collaboratorIds])];
-  const where = and(
+  const filters = [
     inArray(user.id, visibleIds.length > 0 ? visibleIds : [actor.id]),
     ne(user.role, "admin"),
+    requestedIds == null
+      ? undefined
+      : requestedIds.length > 0
+        ? inArray(user.id, requestedIds)
+        : eq(user.id, "__no_access__"),
     role ? eq(user.role, role as typeof user.$inferSelect.role) : undefined,
-  );
+  ].filter(Boolean);
+  const where = and(...filters);
 
   const [rows, total] = await Promise.all([
     db

@@ -1,11 +1,12 @@
 import { useGetIdentity, useNavigation } from "@refinedev/core";
 import { AlertCircle, ArrowRight, BriefcaseBusiness, Building2, ClipboardList, FolderClock, ShieldCheck, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { DASHBOARD_ROLE_COPY, USER_ROLES } from "@/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchDashboardSnapshot } from "@/lib/dashboard";
 import type { DashboardRecord, SessionUser } from "@/types";
 
@@ -17,110 +18,148 @@ export default function DashboardPage() {
   const Icon = copy.icon;
   const [dashboard, setDashboard] = useState<DashboardRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const snapshot = await fetchDashboardSnapshot();
+      setDashboard(snapshot);
+      setError(null);
+    } catch (fetchError) {
+      setError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : "Unable to load dashboard data.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const snapshot = await fetchDashboardSnapshot();
-        if (!cancelled) {
-          setDashboard(snapshot);
-          setError(null);
-        }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Unable to load dashboard data.",
-          );
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const stats = dashboard?.stats;
   const spotlightProjects = dashboard?.spotlightProjects ?? [];
   const recentEvents = dashboard?.recentEvents ?? [];
   const alerts = dashboard?.alerts ?? [];
+  const isInitialLoading = loading && !dashboard;
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
-        <div className="sitepulse-hero rounded-[1.6rem] border px-6 py-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-3">
-              <Badge variant="secondary" className="px-2.5 py-1 text-xs font-medium">
-                {role.replaceAll("_", " ")}
-              </Badge>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-semibold tracking-normal">
-                  {copy.title}
-                </h1>
-                <p className="max-w-2xl text-sm text-muted-foreground">
-                  {copy.summary}
-                </p>
-              </div>
+      {isInitialLoading ? (
+        <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
+          <div className="sitepulse-hero rounded-[1.6rem] border px-6 py-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-10 w-2/3" />
+              <Skeleton className="h-5 w-full max-w-xl" />
             </div>
-            <div className="rounded-2xl border bg-background/80 p-3 shadow-sm">
-              <Icon className="h-5 w-5" />
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
             </div>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {buildHeroMetrics(role, stats).map((item) => (
-              <div key={item.label} className="rounded-2xl border bg-background/72 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="mt-2 text-2xl font-semibold">{item.value}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.note}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Shift brief</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                Signed in
-              </p>
-              <p className="mt-1 font-medium text-foreground">
-                {identity?.name ?? "SitePulse user"}
-              </p>
-              <p>{identity?.email ?? "session unavailable"}</p>
-            </div>
-            <div className="space-y-2">
-              {alerts.length ? (
-                alerts.map((item) => (
-                  <div key={item} className="rounded-xl border bg-muted/45 px-3 py-3">
-                    {item}
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-xl border bg-muted/45 px-3 py-3">
-                  Dashboard signals will appear here once data finishes loading.
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Shift brief</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-24 rounded-xl" />
+            </CardContent>
+          </Card>
+        </section>
+      ) : (
+        <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
+          <div className="sitepulse-hero rounded-[1.6rem] border px-6 py-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-3">
+                <Badge variant="secondary" className="px-2.5 py-1 text-xs font-medium">
+                  {role.replaceAll("_", " ")}
+                </Badge>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold tracking-normal">
+                    {copy.title}
+                  </h1>
+                  <p className="max-w-2xl text-sm text-muted-foreground">
+                    {copy.summary}
+                  </p>
                 </div>
-              )}
-            </div>
-            {error ? (
-              <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3 text-destructive">
-                {error}
               </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </section>
+              <div className="rounded-2xl border bg-background/80 p-3 shadow-sm">
+                <Icon className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {buildHeroMetrics(role, stats).map((item) => (
+                <div key={item.label} className="rounded-2xl border bg-background/72 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{item.value}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Shift brief</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Signed in
+                </p>
+                <p className="mt-1 font-medium text-foreground">
+                  {identity?.name ?? "SitePulse user"}
+                </p>
+                <p>{identity?.email ?? "session unavailable"}</p>
+              </div>
+              <div className="space-y-2">
+                {alerts.length ? (
+                  alerts.map((item) => (
+                    <div key={item} className="rounded-xl border bg-muted/45 px-3 py-3">
+                      {item}
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-xl border bg-muted/45 px-3 py-3">
+                    Dashboard signals will appear here once data finishes loading.
+                  </div>
+                )}
+              </div>
+              {error ? (
+                <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3 text-destructive">
+                  <div>{error}</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-destructive/30 bg-background/80 text-destructive hover:bg-destructive/5"
+                    onClick={() => void loadDashboard()}
+                    disabled={loading}
+                  >
+                    {loading ? "Retrying..." : "Retry dashboard"}
+                  </Button>
+                  {dashboard ? (
+                    <p className="text-xs text-destructive/80">
+                      Showing the last successfully loaded snapshot while we try again.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>

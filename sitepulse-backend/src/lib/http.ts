@@ -16,6 +16,9 @@ export class AppError extends Error {
   }
 }
 
+/**
+ * Convert any request failure into the client-facing API error envelope.
+ */
 export const buildClientErrorResponse = (error: unknown) => {
   if (error instanceof AppError) {
     return {
@@ -23,6 +26,10 @@ export const buildClientErrorResponse = (error: unknown) => {
       body: {
         code: error.code,
         message: error.message,
+        error: {
+          code: error.code,
+          message: error.message,
+        },
       },
     };
   }
@@ -32,10 +39,18 @@ export const buildClientErrorResponse = (error: unknown) => {
     body: {
       code: "INTERNAL_ERROR",
       message: "An unexpected SitePulse system error occurred.",
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected SitePulse system error occurred.",
+      },
+      // help_url could be added in future iterations for guidance
     },
   };
 };
 
+/**
+ * Map low-level database errors onto stable application errors.
+ */
 export const classifyDbError = (error: unknown) => {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
@@ -66,6 +81,9 @@ export const classifyDbError = (error: unknown) => {
   };
 };
 
+/**
+ * Ensure every thrown value becomes an AppError before it leaves service code.
+ */
 export const asAppError = (error: unknown) => {
   if (error instanceof AppError) {
     return error;

@@ -26,7 +26,7 @@ import {
   listReadableProjectIds,
 } from "./project-scope.js";
 import { createProjectEvent } from "./project-events.js";
-import { assertRecord, parsePagination, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const changeOrderPayload = (payload: Record<string, unknown>) => ({
   projectId: sanitizeText(payload.projectId, {
@@ -320,6 +320,7 @@ export const listChangeOrders = async (
   const { page, limit, offset } = parsePagination(query);
   const readableIds = await listReadableProjectIds(actor);
   const manageableIds = actor.role === "project_manager" ? await listManagedProjectIds(actor) : null;
+  const requestedIds = parseIdList(query);
   const projectId =
     typeof query.projectId === "string" && query.projectId ? query.projectId : null;
   const status =
@@ -340,6 +341,11 @@ export const listChangeOrders = async (
 
   const filters = [
     baseScope,
+    requestedIds == null
+      ? undefined
+      : requestedIds.length > 0
+        ? inArray(changeOrders.id, requestedIds)
+        : eq(changeOrders.id, "__no_access__"),
     projectId ? eq(changeOrders.projectId, projectId) : undefined,
     actor.role === "client" ? eq(changeOrders.status, "approved") : undefined,
     status ? eq(changeOrders.status, status) : undefined,

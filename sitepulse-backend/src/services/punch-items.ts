@@ -18,7 +18,7 @@ import {
 } from "../lib/validation.js";
 import { assertProjectReadable, listReadableProjectIds } from "./project-scope.js";
 import { createProjectEvent } from "./project-events.js";
-import { assertRecord, parsePagination, toIsoString } from "./shared.js";
+import { assertRecord, parseIdList, parsePagination, toIsoString } from "./shared.js";
 
 const normalizeDateKey = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -234,6 +234,7 @@ export const listPunchItems = async (
   }
 
   const readableIds = await listReadableProjectIds(actor);
+  const requestedIds = parseIdList(query);
   const projectId =
     typeof query.projectId === "string" && query.projectId ? query.projectId : null;
 
@@ -248,12 +249,15 @@ export const listPunchItems = async (
         ? inArray(punchItems.projectId, readableIds)
         : eq(punchItems.projectId, "__no_access__");
 
-  const where =
-    projectId && scopeWhere
-      ? and(scopeWhere, eq(punchItems.projectId, projectId))
-      : projectId
-        ? eq(punchItems.projectId, projectId)
-        : scopeWhere;
+  const requestedWhere =
+    requestedIds == null
+      ? undefined
+      : requestedIds.length > 0
+        ? inArray(punchItems.id, requestedIds)
+        : eq(punchItems.id, "__no_access__");
+
+  const whereFilters = [scopeWhere, requestedWhere, projectId ? eq(punchItems.projectId, projectId) : undefined].filter(Boolean);
+  const where = whereFilters.length ? and(...whereFilters) : undefined;
 
   const [rows, total] = await Promise.all([
     db

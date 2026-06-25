@@ -6,7 +6,6 @@ import {
   useRegister,
   useRefineOptions,
   useLink,
-  useNotification,
 } from "@refinedev/core";
 import { BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,7 @@ export const SignUpForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  const { open } = useNotification();
+  const [error, setError] = useState("");
 
   const Link = useLink();
 
@@ -41,14 +39,25 @@ export const SignUpForm = () => {
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+
+    if (name.trim().length < 2) {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    if (!email.trim() || !email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Passwords must be at least 8 characters long.");
+      return;
+    }
 
     if (password !== confirmPassword) {
-      open?.({
-        type: "error",
-        message: "Passwords don't match",
-        description:
-          "Please make sure both password fields contain the same value.",
-      });
+      setError("Passwords do not match.");
 
       return;
     }
@@ -112,6 +121,7 @@ export const SignUpForm = () => {
                 id="name"
                 type="text"
                 required
+                minLength={2}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -140,6 +150,7 @@ export const SignUpForm = () => {
                 type="email"
                 placeholder=""
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -154,6 +165,8 @@ export const SignUpForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
+                autoComplete="new-password"
               />
             </div>
 
@@ -166,8 +179,14 @@ export const SignUpForm = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                minLength={8}
+                autoComplete="new-password"
               />
             </div>
+
+            {error ? (
+              <p className={cn("mt-4", "text-sm", "text-destructive")}>{error}</p>
+            ) : null}
 
             <Button
               type="submit"

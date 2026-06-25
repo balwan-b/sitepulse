@@ -6,26 +6,31 @@ type AuthResponse<T> = {
   error: { message: string; code?: string } | null;
 };
 
-const normalizeUser = (payload: unknown): SessionUser | null => {
-  if (!payload || typeof payload !== "object") return null;
+type AuthUserPayload = {
+  id?: string;
+  email?: string;
+  name?: string;
+  role?: SessionUser["role"];
+  image?: string | null;
+};
 
-  const record = payload as Record<string, unknown>;
-
+const normalizeUser = (payload: AuthUserPayload | null | undefined): SessionUser | null => {
   if (
-    typeof record.id !== "string" ||
-    typeof record.email !== "string" ||
-    typeof record.name !== "string" ||
-    typeof record.role !== "string"
+    !payload ||
+    typeof payload.id !== "string" ||
+    typeof payload.email !== "string" ||
+    typeof payload.name !== "string" ||
+    typeof payload.role !== "string"
   ) {
     return null;
   }
 
   return {
-    id: record.id,
-    email: record.email,
-    name: record.name,
-    role: record.role as SessionUser["role"],
-    image: typeof record.image === "string" ? record.image : undefined,
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+    image: typeof payload.image === "string" ? payload.image : undefined,
   };
 };
 
@@ -43,12 +48,12 @@ async function request<T>(
       ...options,
     });
 
-    const payload = (await response.json().catch(() => ({}))) as {
+      const payload = (await response.json().catch(() => ({}))) as {
       user?: unknown;
       data?: unknown;
       message?: string;
       code?: string;
-      error?: { message?: string } | string;
+      error?: { message?: string; code?: string } | string;
     };
 
     if (!response.ok) {
@@ -63,7 +68,8 @@ async function request<T>(
     }
 
     return {
-      data: (normalizeUser(payload.user ?? payload.data) as T | null) ?? null,
+      data: (normalizeUser(payload.user as AuthUserPayload | null | undefined) ??
+        normalizeUser(payload.data as AuthUserPayload | null | undefined)) as T | null,
       error: null,
     };
   } catch (error) {

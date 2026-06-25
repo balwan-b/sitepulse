@@ -25,6 +25,7 @@ export const SignInForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const Link = useLink();
 
@@ -34,6 +35,12 @@ export const SignInForm = () => {
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
 
     login({
       email,
@@ -102,11 +109,16 @@ export const SignInForm = () => {
             >
               <Label htmlFor="password">Password</Label>
               <InputPassword
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
+
+            {error ? (
+              <p className={cn("mt-4", "text-sm", "text-destructive")}>{error}</p>
+            ) : null}
 
             <div
               className={cn(

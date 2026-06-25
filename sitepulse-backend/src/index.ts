@@ -2,6 +2,12 @@ import "./lib/load-env.js";
 
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import * as Sentry from "@sentry/node";
+import * as promClient from "prom-client";
+import logger from "./lib/logger.js";
+import crypto from "crypto";
 import { toNodeHandler } from "better-auth/node";
 import { z } from "zod";
 
@@ -29,7 +35,9 @@ import { punchItemsRouter } from "./routes/punch-items.js";
 import { usersRouter } from "./routes/users.js";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 });
@@ -43,7 +51,24 @@ const env = envSchema.parse({
 const app = express();
 const arcjet = getArcjetConfig();
 
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: env.NODE_ENV,
+  tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0),
+});
+
 app.disable("x-powered-by");
+
+// Security and hardening
+app.use(Sentry.Handlers.requestHandler());
+app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 60_000,
+    max: Number(process.env.RATE_LIMIT_MAX ?? 120),
+  }),
+);
+
 app.use(
   cors({
     origin: env.FRONTEND_URL,
@@ -51,9 +76,57 @@ app.use(
     credentials: true,
   }),
 );
+
+// Ensure auth cookies set by upstream handlers include secure flags in prod
+app.use((req, res, next) => {
+  const origSetHeader = res.setHeader.bind(res) as typeof res.setHeader;
+  res.setHeader = function (
+    name: string | number,
+    value: string | string[] | number | readonly string[] | undefined,
+  ) {
+    try {
+      if (String(name).toLowerCase() === "set-cookie" && value) {
+        const cookies = Array.isArray(value) ? value.slice() : [String(value)];
+        const flags =
+          env.NODE_ENV === "production"
+            ? "; Secure; SameSite=Strict; HttpOnly"
+            : "; HttpOnly";
+        const modified = cookies.map((c) => {
+          const lc = String(c).toLowerCase();
+          if (
+            lc.includes("samesite") ||
+            lc.includes("secure") ||
+            lc.includes("httponly")
+          )
+            return String(c);
+          return String(c) + flags;
+        });
+        return origSetHeader(
+          "Set-Cookie",
+          modified,
+        );
+      }
+    } catch (e) {
+      // If anything goes wrong here, don't break the response path.
+      logger.warn({ err: e }, "cookie-flag-middleware-failed");
+    }
+
+    return origSetHeader(name, value as any);
+  };
+
+  next();
+});
+
 app.use(express.json());
 app.use(attachRequestId);
 app.use(attachAuthenticatedUser);
+
+// Prometheus default metrics
+try {
+  promClient.collectDefaultMetrics({ prefix: "sitepulse_" });
+} catch (err) {
+  logger.warn({ err }, "prom-client-init-failed");
+}
 
 app.use("/api/auth/sign-up/email", blockStaffSelfSignup);
 app.use("/api/auth", toNodeHandler(auth));
@@ -67,6 +140,21 @@ app.get("/health", (_req, res) => {
       arcjetEnabled: arcjet.enabled,
     },
   });
+});
+
+app.get("/ready", (_req, res) => {
+  res.status(200).json({ data: { ready: true } });
+});
+
+app.get("/metrics", async (_req, res) => {
+  try {
+    res.setHeader("Content-Type", promClient.register.contentType);
+    const metrics = await promClient.register.metrics();
+    res.send(metrics);
+  } catch (err) {
+    logger.warn({ err }, "metrics-error");
+    res.status(500).send("metrics unavailable");
+  }
 });
 
 app.get("/api/session", (req, res) => {
@@ -122,10 +210,25 @@ app.use(
             "INTERNAL_ERROR",
             "An unexpected SitePulse system error occurred.",
           );
-
     auditError(req, "UNHANDLED_REQUEST_FAILURE", err, "express", {
       normalizedCode: normalizedError.code,
     });
+
+    try {
+      Sentry.captureException(err);
+    } catch (e) {
+      logger.warn({ err: e }, "sentry-capture-failed");
+    }
+
+    logger.error(
+      {
+        err:
+          err instanceof Error
+            ? { message: err.message, stack: err.stack }
+            : String(err),
+      },
+      "unhandled_request_failure",
+    );
 
     const response = buildClientErrorResponse(normalizedError);
     res.status(response.statusCode).json(response.body);
@@ -133,7 +236,11 @@ app.use(
 );
 
 app.listen(env.PORT, () => {
-  console.log(
-    `SitePulse backend listening on http://localhost:${env.PORT} for ${env.FRONTEND_URL} (arcjet ${arcjet.enabled ? "enabled" : "disabled"})`,
+  logger.info(
+    { port: env.PORT, frontend: env.FRONTEND_URL, arcjet: arcjet.enabled },
+    "sitepulse_backend_listening",
   );
 });
+
+// Attach Sentry error handler last (after our error handling) as a safety net
+app.use(Sentry.Handlers.errorHandler());

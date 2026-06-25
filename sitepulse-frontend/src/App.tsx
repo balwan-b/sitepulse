@@ -11,6 +11,7 @@ import routerProvider, {
 } from "@refinedev/react-router";
 import "./App.css";
 import { Layout } from "./components/refine-ui/layout/layout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
@@ -22,10 +23,14 @@ import type { SessionUser, SitePulseUserRole } from "./types";
 
 const AccessDeniedPage = lazy(() => import("./pages/access-denied"));
 const ClientPortalPage = lazy(() => import("./pages/client-portal"));
-const ChangeOrdersCreatePage = lazy(() => import("./pages/change-orders/create"));
+const ChangeOrdersCreatePage = lazy(
+  () => import("./pages/change-orders/create"),
+);
 const ChangeOrdersListPage = lazy(() => import("./pages/change-orders/list"));
 const ChangeOrdersShowPage = lazy(() => import("./pages/change-orders/show"));
-const CrewAssignmentsCreatePage = lazy(() => import("./pages/crew-assignments/create"));
+const CrewAssignmentsCreatePage = lazy(
+  () => import("./pages/crew-assignments/create"),
+);
 const DashboardPage = lazy(() => import("./pages/dashboard"));
 const DailyLogsCreatePage = lazy(() => import("./pages/daily-logs/create"));
 const DailyLogsListPage = lazy(() => import("./pages/daily-logs/list"));
@@ -44,7 +49,9 @@ const OperationsPage = lazy(() => import("./pages/operations"));
 const PunchItemsCreatePage = lazy(() => import("./pages/punch-items/create"));
 const PunchItemsListPage = lazy(() => import("./pages/punch-items/list"));
 const PunchItemsShowPage = lazy(() => import("./pages/punch-items/show"));
-const ProjectPhasesCreatePage = lazy(() => import("./pages/project-phases/create"));
+const ProjectPhasesCreatePage = lazy(
+  () => import("./pages/project-phases/create"),
+);
 const ProjectPhasesListPage = lazy(() => import("./pages/project-phases/list"));
 const ProjectPhasesShowPage = lazy(() => import("./pages/project-phases/show"));
 const ProjectsCreatePage = lazy(() => import("./pages/projects/create"));
@@ -95,15 +102,20 @@ function App() {
                   >
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route
+                      path="/forgot-password"
+                      element={<ForgotPassword />}
+                    />
                   </Route>
 
                   <Route
                     element={
                       <Authenticated key="private-routes" fallback={<Login />}>
-                        <Layout>
-                          <Outlet />
-                        </Layout>
+                        <ErrorBoundary>
+                          <Layout>
+                            <Outlet />
+                          </Layout>
+                        </ErrorBoundary>
                       </Authenticated>
                     }
                   >
@@ -165,7 +177,10 @@ function App() {
                       path="/project-phases/create"
                       element={
                         <RoleGuard
-                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                          ]}
                         >
                           <ProjectPhasesCreatePage />
                         </RoleGuard>
@@ -190,7 +205,10 @@ function App() {
                       path="/crew-assignments/create"
                       element={
                         <RoleGuard
-                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                          ]}
                         >
                           <CrewAssignmentsCreatePage />
                         </RoleGuard>
@@ -214,7 +232,10 @@ function App() {
                       path="/daily-logs/create"
                       element={
                         <RoleGuard
-                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.SITE_SUPERVISOR]}
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.SITE_SUPERVISOR,
+                          ]}
                         >
                           <DailyLogsCreatePage />
                         </RoleGuard>
@@ -324,7 +345,10 @@ function App() {
                       path="/staff"
                       element={
                         <RoleGuard
-                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.PROJECT_MANAGER]}
+                          allowedRoles={[
+                            USER_ROLES.ADMIN,
+                            USER_ROLES.PROJECT_MANAGER,
+                          ]}
                         >
                           <StaffListPage />
                         </RoleGuard>
@@ -347,12 +371,17 @@ function App() {
                     <Route
                       path="/client-portal"
                       element={
-                        <RoleGuard allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CLIENT]}>
+                        <RoleGuard
+                          allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.CLIENT]}
+                        >
                           <ClientPortalPage />
                         </RoleGuard>
                       }
                     />
-                    <Route path="/access-denied" element={<AccessDeniedPage />} />
+                    <Route
+                      path="/access-denied"
+                      element={<AccessDeniedPage />}
+                    />
                   </Route>
                 </Routes>
               </Suspense>

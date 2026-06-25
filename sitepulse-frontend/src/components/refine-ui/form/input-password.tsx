@@ -19,11 +19,13 @@ export const InputPassword = ({ className, ...props }: InputPasswordProps) => {
       />
       <button
         type="button"
+        aria-label={showPassword ? "Hide password" : "Show password"}
+        title={showPassword ? "Hide password" : "Show password"}
         className={cn(
           "appearance-none",
           "absolute right-3 top-1/2 -translate-y-1/2"
         )}
-        onClick={() => setShowPassword(!showPassword)}
+        onClick={() => setShowPassword((visible) => !visible)}
       >
         {showPassword ? (
           <EyeOff size={18} className={cn("text-gray-500")} />
