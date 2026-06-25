@@ -52,9 +52,9 @@ const app = express();
 const arcjet = getArcjetConfig();
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
   environment: env.NODE_ENV,
   tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0),
+  ...(process.env.SENTRY_DSN ? { dsn: process.env.SENTRY_DSN } : {}),
 });
 
 app.disable("x-powered-by");
@@ -79,27 +79,27 @@ app.use(
 
 // Ensure auth cookies set by upstream handlers include secure flags in prod
 app.use((req, res, next) => {
-  const origSetHeader = res.setHeader.bind(res) as typeof res.setHeader;
+  const origSetHeader = res.setHeader.bind(res) as any;
   res.setHeader = function (
-    name: string | number,
-    value: string | string[] | number | readonly string[] | undefined,
-  ) {
+    name: string,
+    value: string | readonly string[],
+  ): any {
     try {
       if (String(name).toLowerCase() === "set-cookie" && value) {
-        const cookies = Array.isArray(value) ? value.slice() : [String(value)];
+        const cookies = Array.isArray(value) ? value.slice() : [value];
         const flags =
           env.NODE_ENV === "production"
             ? "; Secure; SameSite=Strict; HttpOnly"
             : "; HttpOnly";
         const modified = cookies.map((c) => {
-          const lc = String(c).toLowerCase();
+          const lc = c.toLowerCase();
           if (
             lc.includes("samesite") ||
             lc.includes("secure") ||
             lc.includes("httponly")
           )
-            return String(c);
-          return String(c) + flags;
+            return c;
+          return c + flags;
         });
         return origSetHeader(
           "Set-Cookie",
@@ -111,7 +111,7 @@ app.use((req, res, next) => {
       logger.warn({ err: e }, "cookie-flag-middleware-failed");
     }
 
-    return origSetHeader(name, value as any);
+    return origSetHeader(name, value);
   };
 
   next();
