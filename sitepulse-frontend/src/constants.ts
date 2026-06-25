@@ -39,15 +39,21 @@ const getEnvVar = (
 };
 
 const runtimeBackendBaseUrl =
-  typeof window !== "undefined"
-    ? window.__SITEPULSE_CONFIG__?.backendBaseUrl?.trim()
+  typeof window !== "undefined" && window.__SITEPULSE_CONFIG__
+    ? (window.__SITEPULSE_CONFIG__.backendBaseUrl ?? "").trim()
     : undefined;
 
-export const BACKEND_BASE_URL = getEnvVar(
-  "VITE_BACKEND_BASE_URL",
-  "http://localhost:4000",
-  runtimeBackendBaseUrl,
-).replace(/\/+$/, "").replace(/\/api$/, "");
+const resolveBackendBaseUrl = () => {
+  if (runtimeBackendBaseUrl !== undefined) {
+    return runtimeBackendBaseUrl.replace(/\/+$/, "").replace(/\/api$/, "");
+  }
+
+  return getEnvVar("VITE_BACKEND_BASE_URL", "http://localhost:4000")
+    .replace(/\/+$/, "")
+    .replace(/\/api$/, "");
+};
+
+export const BACKEND_BASE_URL = resolveBackendBaseUrl();
 export const API_URL = `${BACKEND_BASE_URL}/api`;
 export const AUTH_API_URL = `${API_URL}/auth`;
 
