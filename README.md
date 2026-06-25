@@ -131,10 +131,8 @@ Frontend tests also use Node’s built-in test runner with `tsx` for pure-module
 
 GitHub Actions CI:
 
-- The workflow runs backend app checks with Node 24 and a real PostgreSQL service because backend tests require a live database.
-- The workflow runs frontend app checks with Node 20 to match the production frontend container baseline more closely.
-- CI also builds both Docker images directly, which mirrors the Railway deployment path for this repo.
-- Frontend tests use the frontend package’s own `tsx` dependency so CI no longer depends on the backend install layout.
+- The workflow builds both Docker images directly, which mirrors the Railway deployment path for this repo.
+- Docker image success is the current CI release gate because both frontend and backend are deployed to Railway from their Dockerfiles.
 
 These cover:
 
