@@ -8,7 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useGo, useResourceParams, useTranslate } from "@refinedev/core";
 import { ChevronLeft, InfoIcon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * When the app is navigated to a non-existent route, refine shows a default error page.

@@ -187,8 +187,11 @@ export const dataProvider: DataProvider = {
     params: CreateManyParams<TVariables>,
   ) => {
     // MVP batch writes fan out to the existing single-record endpoints.
+    const items = (params as CreateManyParams<TVariables> & {
+      data: TVariables[];
+    }).data;
     const records = await Promise.all(
-      params.data.map((variables) =>
+      items.map((variables: TVariables) =>
         request<ApiDataResponse<TData>>(params.resource, {
           method: "POST",
           body: JSON.stringify(variables ?? {}),
@@ -213,7 +216,7 @@ export const dataProvider: DataProvider = {
       ),
     );
 
-    return { data: records as UpdateManyResponse<TData>["data"] };
+    return { data: records as unknown as UpdateManyResponse<TData>["data"] };
   },
   deleteOne: async <
     TData extends BaseRecord = BaseRecord,
@@ -233,7 +236,7 @@ export const dataProvider: DataProvider = {
   ) => {
     // Delete UI is not wired to destructive backend routes yet.
     return {
-      data: params.ids as DeleteManyResponse<TData>["data"],
+      data: params.ids as unknown as DeleteManyResponse<TData>["data"],
     };
   },
   custom: async () => {

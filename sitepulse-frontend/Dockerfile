@@ -1,18 +1,16 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-RUN corepack enable
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@10 --activate
+COPY package.json ./
 ENV CI=true
-RUN pnpm install --frozen-lockfile
+RUN npm install --legacy-peer-deps
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV CI=true
-RUN pnpm build
+RUN npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
